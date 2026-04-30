@@ -1,0 +1,19 @@
+{
+  "name": "test-automation-accelerator",
+  "version": "1.0.0",
+  "description": "Intelligent Test Automation Accelerator MVP - Playwright + TypeScript",
+  "scripts": {
+    "test": "npx playwright test",
+    "test:ui-only": "npx playwright test --project=ui-chromium",
+    "test:api-only": "npx playwright test --project=api",
+    "test:headed": "npx playwright test --headed",
+    "test:ui": "npx playwright test --ui",
+    "test:debug": "npx playwright test --debug",
+    "report": "npx playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.52.0",
+    "@types/node": "^25.6.0",
+    "typescript": "^5.8.0"
+  }
+}
