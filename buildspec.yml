@@ -19,7 +19,9 @@ phases:
       - cd ../.. 
       - echo "Installing test-accelerator dependencies..."
       - cd test-accelerator && npm ci
-      - npx playwright install --with-deps chromium
+      - echo "Installing Playwright browser dependencies..."
+      - yum install -y alsa-lib atk at-spi2-atk cups-libs libdrm libXcomposite libXdamage libXrandr mesa-libgbm pango nss nspr libxshmfence
+      - npx playwright install chromium
 
   pre_build:
     commands:
