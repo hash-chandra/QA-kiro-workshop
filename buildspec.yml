@@ -1,0 +1,75 @@
+version: 0.2
+
+env:
+  variables:
+    CI: "true"
+    ENV: "dev"
+    BASE_URL: "http://localhost:5173"
+    API_BASE_URL: "http://localhost:3000"
+    NODE_OPTIONS: "--max-old-space-size=4096"
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 22
+    commands:
+      - echo "Installing qe-playground dependencies..."
+      - cd qe-playground/server && npm ci
+      - cd ../client && npm ci
+      - cd ../.. 
+      - echo "Installing test-accelerator dependencies..."
+      - cd test-accelerator && npm ci
+      - npx playwright install --with-deps chromium
+
+  pre_build:
+    commands:
+      - echo "Starting qe-playground application..."
+      - cd $CODEBUILD_SRC_DIR/qe-playground/server && npm start &
+      - cd $CODEBUILD_SRC_DIR/qe-playground/client && npx vite --host &
+      - echo "Waiting for services to be ready..."
+      - |
+        RETRIES=30
+        until curl -sf http://localhost:3000/health > /dev/null 2>&1 || [ $RETRIES -eq 0 ]; do
+          echo "Waiting for API server... ($RETRIES attempts left)"
+          RETRIES=$((RETRIES - 1))
+          sleep 2
+        done
+      - |
+        RETRIES=30
+        until curl -sf http://localhost:5173 > /dev/null 2>&1 || [ $RETRIES -eq 0 ]; do
+          echo "Waiting for client dev server... ($RETRIES attempts left)"
+          RETRIES=$((RETRIES - 1))
+          sleep 2
+        done
+      - echo "Application is ready."
+
+  build:
+    commands:
+      - echo "Running Playwright tests..."
+      - cd $CODEBUILD_SRC_DIR/test-accelerator
+      - npx playwright test --reporter=list,html,json 2>&1 || TEST_EXIT_CODE=$?
+      - echo "Tests completed with exit code ${TEST_EXIT_CODE:-0}"
+
+  post_build:
+    commands:
+      - echo "Collecting test results..."
+      - |
+        if [ "${TEST_EXIT_CODE:-0}" -ne 0 ]; then
+          echo "Some tests failed. Check artifacts for details."
+        else
+          echo "All tests passed."
+        fi
+
+reports:
+  playwright-results:
+    files:
+      - "test-accelerator/test-results/results.json"
+    file-format: "GENERICJSONREPORT"
+
+artifacts:
+  files:
+    - "test-accelerator/playwright-report/**/*"
+    - "test-accelerator/test-results/**/*"
+  base-directory: "."
+  name: "test-results-$(date +%Y-%m-%d-%H%M%S)"
+  discard-paths: no
