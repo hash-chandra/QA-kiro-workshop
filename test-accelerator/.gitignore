@@ -4,3 +4,10 @@ test-results/
 playwright-report/
 blob-report/
 .env
+
+# BrowserStack artifacts
+log/
+local.log
+browserstack.err
+browserstackSetupConfig.json
+playwright-browserstack-sdk.config.*

@@ -9,11 +9,17 @@
     "test:headed": "npx playwright test --headed",
     "test:ui": "npx playwright test --ui",
     "test:debug": "npx playwright test --debug",
+    "test:bs": "BROWSERSTACK_CONFIG_FILE=config/browserstack/browserstack.yml npx browserstack-node-sdk playwright test --config=browserstack.config.ts",
+    "test:bs:chrome": "BROWSERSTACK_CONFIG_FILE=config/browserstack/browserstack.chrome.yml npx browserstack-node-sdk playwright test --config=browserstack.config.ts",
+    "test:bs:firefox": "BROWSERSTACK_CONFIG_FILE=config/browserstack/browserstack.firefox.yml npx browserstack-node-sdk playwright test --config=browserstack.config.ts",
+    "test:bs:safari": "BROWSERSTACK_CONFIG_FILE=config/browserstack/browserstack.webkit.yml npx browserstack-node-sdk playwright test --config=browserstack.config.ts",
     "report": "npx playwright show-report"
   },
   "devDependencies": {
     "@playwright/test": "^1.52.0",
     "@types/node": "^25.6.0",
+    "browserstack-node-sdk": "^1.53.6",
+    "dotenv": "^17.4.2",
     "typescript": "^5.8.0"
   }
 }

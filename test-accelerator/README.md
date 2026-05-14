@@ -33,6 +33,18 @@ npm run test:debug            # run in debug mode
 npm run report                # view HTML report
 ```
 
+### BrowserStack (Cross-Browser/Device)
+
+```bash
+npm run test:bs               # all BrowserStack browsers/devices
+npm run test:bs:chrome        # Chrome on Windows 11
+npm run test:bs:firefox       # Firefox on Windows 11
+npm run test:bs:safari        # Safari on macOS Sonoma
+npm run test:bs:mobile        # Android + iPhone
+```
+
+See [docs/browserstack.md](docs/browserstack.md) for full setup and credential configuration.
+
 ## Environment Configuration
 
 Set variables in `.env` or export them before running:
@@ -43,6 +55,8 @@ Set variables in `.env` or export them before running:
 | `BASE_URL`     | `http://localhost:5173`    | UI base URL          |
 | `API_BASE_URL` | `http://localhost:3000`    | API base URL         |
 | `CI`           | `false`                    | CI mode flag         |
+| `BROWSERSTACK_USERNAME` | —               | BrowserStack username |
+| `BROWSERSTACK_ACCESS_KEY` | —             | BrowserStack access key |
 
 ## Project Structure
 

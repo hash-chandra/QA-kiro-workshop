@@ -24,73 +24,98 @@ export class DashboardPage extends BasePage {
 
   async open(): Promise<void> {
     await this.navigate('/dashboard');
+    await this.waitForVisible(this.welcomeMessage);
   }
 
   async getWelcomeText(): Promise<string> {
-    return this.welcomeMessage.innerText();
+    const text = await this.waitForText(this.welcomeMessage);
+    return text;
   }
 
   async searchTasks(query: string): Promise<void> {
+    await this.searchInput.waitFor({ state: 'visible' });
     await this.searchInput.fill(query);
   }
 
   async filterByStatus(status: string): Promise<void> {
+    await this.statusFilter.waitFor({ state: 'visible' });
     await this.statusFilter.selectOption(status);
   }
 
   async clickAddTask(): Promise<void> {
+    await this.addTaskButton.waitFor({ state: 'visible' });
     await this.addTaskButton.click();
   }
 
   async createTask(title: string, status: string, assignee: string): Promise<void> {
     await this.clickAddTask();
+    await this.taskTitleInput.waitFor({ state: 'visible' });
     await this.taskTitleInput.fill(title);
+    await this.taskStatusSelect.waitFor({ state: 'visible' });
     await this.taskStatusSelect.selectOption(status);
+    await this.taskAssigneeInput.waitFor({ state: 'visible' });
     await this.taskAssigneeInput.fill(assignee);
+    await this.submitTaskButton.waitFor({ state: 'visible' });
     await this.submitTaskButton.click();
   }
 
   async deleteTask(id: number): Promise<void> {
-    await this.page.getByTestId(`delete-task-${id}`).click();
+    const deleteButton = this.page.getByTestId(`delete-task-${id}`);
+    await deleteButton.waitFor({ state: 'visible' });
+    await deleteButton.click();
   }
 
   async getTaskCount(): Promise<string> {
-    return this.taskCount.innerText();
+    const count = await this.waitForText(this.taskCount);
+    return count;
   }
 
   async isTaskTableVisible(): Promise<boolean> {
-    return this.taskTable.isVisible();
+    const visible = await this.waitForVisible(this.taskTable);
+    return visible;
   }
 
   async isNoTasksMessageVisible(): Promise<boolean> {
-    return this.noTasksMessage.isVisible();
+    const visible = await this.waitForVisible(this.noTasksMessage);
+    return visible;
   }
 
   async isTaskFormVisible(): Promise<boolean> {
-    return this.taskForm.isVisible();
+    const visible = await this.waitForVisible(this.taskForm);
+    return visible;
   }
 
   async getTaskFormError(): Promise<string> {
-    return this.taskFormError.innerText();
+    const error = await this.waitForText(this.taskFormError);
+    return error;
   }
 
   async getNavbarUserText(): Promise<string> {
-    return this.navbarUser.innerText();
+    const text = await this.waitForText(this.navbarUser);
+    return text;
   }
 
   async logout(): Promise<void> {
+    await this.logoutButton.waitFor({ state: 'visible' });
     await this.logoutButton.click();
   }
 
   async getTaskTitles(): Promise<string[]> {
-    return this.page.getByTestId('task-title').allInnerTexts();
+    const firstTitle = this.page.getByTestId('task-title').first();
+    await firstTitle.waitFor({ state: 'visible', timeout: 15_000 });
+    const titles = await this.page.getByTestId('task-title').allInnerTexts();
+    return titles;
   }
 
   async getTaskStatuses(): Promise<string[]> {
-    return this.page.getByTestId('task-status').allInnerTexts();
+    const firstStatus = this.page.getByTestId('task-status').first();
+    await firstStatus.waitFor({ state: 'visible', timeout: 15_000 });
+    const statuses = await this.page.getByTestId('task-status').allInnerTexts();
+    return statuses;
   }
 
   async submitEmptyTask(): Promise<void> {
+    await this.submitTaskButton.waitFor({ state: 'visible' });
     await this.submitTaskButton.click();
   }
 }
