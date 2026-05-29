@@ -1,7 +1,8 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: >
   CI/CD pipeline for test-automation-workspace.
-  Provisions CodeBuild project connected to CodeCommit, with S3 artifact storage.
+  Provisions CodeBuild project connected to CodeCommit, with S3 artifact storage
+  and a static website bucket for shareable HTML test reports.
 
 Parameters:
   ProjectName:
@@ -45,6 +46,37 @@ Resources:
         IgnorePublicAcls: true
         RestrictPublicBuckets: true
 
+  ReportBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${ProjectName}-reports-${AWS::AccountId}"
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: index.html
+      LifecycleConfiguration:
+        Rules:
+          - Id: ExpireOldReports
+            Status: Enabled
+            ExpirationInDays: 90
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+
+  ReportBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref ReportBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: PublicReadForReports
+            Effect: Allow
+            Principal: "*"
+            Action: s3:GetObject
+            Resource: !Sub "${ReportBucket.Arn}/*"
+
   CodeBuildRole:
     Type: AWS::IAM::Role
     Properties:
@@ -77,6 +109,8 @@ Resources:
                 Resource:
                   - !GetAtt ArtifactBucket.Arn
                   - !Sub "${ArtifactBucket.Arn}/*"
+                  - !GetAtt ReportBucket.Arn
+                  - !Sub "${ReportBucket.Arn}/*"
               - Effect: Allow
                 Action:
                   - codecommit:GitPull
@@ -117,6 +151,8 @@ Resources:
             Value: "http://localhost:5173"
           - Name: API_BASE_URL
             Value: "http://localhost:3000"
+          - Name: REPORT_BUCKET
+            Value: !Ref ReportBucket
       Artifacts:
         Type: S3
         Location: !Ref ArtifactBucket
@@ -180,6 +216,12 @@ Outputs:
   ArtifactBucketName:
     Value: !Ref ArtifactBucket
     Description: S3 bucket for test artifacts
+  ReportBucketName:
+    Value: !Ref ReportBucket
+    Description: S3 bucket for HTML test reports
+  ReportURL:
+    Value: !Sub "http://${ReportBucket}.s3-website-${AWS::Region}.amazonaws.com/latest/index.html"
+    Description: URL to view the latest Playwright HTML report
   CodeBuildConsoleURL:
     Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/codesuite/codebuild/projects/${ProjectName}/history?region=${AWS::Region}"
     Description: URL to view build history in AWS Console
