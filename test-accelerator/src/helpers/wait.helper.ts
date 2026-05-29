@@ -10,7 +10,8 @@ export async function retry<T>(fn: () => Promise<T>, attempts = 3, delayMs = 100
       return await fn();
     } catch (e) {
       if (i === attempts - 1) throw e;
-      await new Promise((r) => setTimeout(r, delayMs));
+      const backoff = delayMs * Math.pow(2, i) * (0.5 + Math.random() * 0.5);
+      await new Promise((r) => setTimeout(r, backoff));
     }
   }
   throw new Error('Retry exhausted');

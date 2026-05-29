@@ -14,7 +14,6 @@ export function randomTask(): { title: string; status: string; assignee: string 
   };
 }
 
-export const TEST_USERS = {
-  admin: { email: 'admin@playground.dev', password: 'admin123', name: 'Admin User' },
-  tester: { email: 'tester@playground.dev', password: 'test123', name: 'Test User' },
-} as const;
+import { ENV } from '../../config/env.config';
+
+export const TEST_USERS = ENV.testUsers;

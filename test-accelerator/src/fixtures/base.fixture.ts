@@ -20,7 +20,7 @@ export const test = base.extend<Fixtures>({
       baseURL: ENV.apiBaseURL,
     });
     await ctx.post('/api/auth/login', {
-      data: { email: 'admin@playground.dev', password: 'admin123' },
+      data: { email: ENV.testUsers.admin.email, password: ENV.testUsers.admin.password },
     });
     await use(ctx);
     await ctx.dispose();
