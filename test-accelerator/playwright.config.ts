@@ -1,19 +1,13 @@
 import { defineConfig, devices } from '@playwright/test';
+import { baseConfig } from './config/base.config';
 import { ENV } from './config/env.config';
 
 export default defineConfig({
-  testDir: './tests',
-  fullyParallel: true,
+  ...baseConfig,
   forbidOnly: ENV.isCI,
   retries: ENV.isCI ? 2 : 0,
   workers: ENV.isCI ? 1 : undefined,
   reporter: [['html'], ['list'], ['json', { outputFile: 'test-results/results.json' }]],
-  use: {
-    baseURL: ENV.baseURL,
-    trace: 'on-first-retry',
-    screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
-  },
   projects: [
     {
       name: 'ui-chromium',
