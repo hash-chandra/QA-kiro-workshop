@@ -35,6 +35,7 @@ export class DashboardPage extends BasePage {
   async searchTasks(query: string): Promise<void> {
     await this.searchInput.waitFor({ state: 'visible' });
     await this.searchInput.fill(query);
+    await this.searchInput.dispatchEvent('input');
   }
 
   async filterByStatus(status: string): Promise<void> {

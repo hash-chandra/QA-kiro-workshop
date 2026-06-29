@@ -4,6 +4,16 @@ test-results/
 playwright-report/
 blob-report/
 .env
+.env.local
+.env.*.local
+
+# Secrets / credentials
+*.pem
+*.key
+*.p12
+.aws/
+aws-credentials*
+browserstack-credentials*
 
 # BrowserStack artifacts
 log/
@@ -11,3 +21,8 @@ local.log
 browserstack.err
 browserstackSetupConfig.json
 playwright-browserstack-sdk.config.*
+
+# Stray exports / scratch files
+req.xml
+*.rss
+.playwright-cli

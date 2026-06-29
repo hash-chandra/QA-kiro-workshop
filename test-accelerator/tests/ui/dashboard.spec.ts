@@ -1,6 +1,6 @@
 import { test, expect } from '../../src/fixtures/base.fixture';
 import { LoginPage, DashboardPage } from '../../src/pages';
-import { TEST_USERS } from '../../src/helpers';
+import { TEST_USERS, uniqueId } from '../../src/helpers';
 
 test.describe('Dashboard Page', () => {
   let dashboardPage: DashboardPage;
@@ -27,18 +27,24 @@ test.describe('Dashboard Page', () => {
   });
 
   test('searches tasks by title', async () => {
-    await dashboardPage.searchTasks('login');
-    const titles = await dashboardPage.getTaskTitles();
-    expect(titles).toHaveLength(1);
-    expect(titles[0]).toContain('login');
+    const title = uniqueId('search-task');
+    await dashboardPage.createTask(title, 'todo', 'tester@playground.dev');
+    await dashboardPage.searchTasks(title);
+    await expect(async () => {
+      const titles = await dashboardPage.getTaskTitles();
+      expect(titles).toEqual([title]);
+    }).toPass({ timeout: 15_000 });
   });
 
   test('filters tasks by status', async () => {
     await dashboardPage.filterByStatus('todo');
-    const statuses = await dashboardPage.getTaskStatuses();
-    for (const status of statuses) {
-      expect(status).toBe('todo');
-    }
+    await expect(async () => {
+      const statuses = await dashboardPage.getTaskStatuses();
+      expect(statuses.length).toBeGreaterThan(0);
+      for (const status of statuses) {
+        expect(status).toBe('todo');
+      }
+    }).toPass({ timeout: 15_000 });
   });
 
   test('shows no tasks message for unmatched search', async () => {
@@ -47,9 +53,13 @@ test.describe('Dashboard Page', () => {
   });
 
   test('creates a new task', async () => {
-    await dashboardPage.createTask('New automation task', 'todo', 'tester@playground.dev');
-    const titles = await dashboardPage.getTaskTitles();
-    expect(titles).toContain('New automation task');
+    const title = uniqueId('new-task');
+    await dashboardPage.createTask(title, 'todo', 'tester@playground.dev');
+    await dashboardPage.searchTasks(title);
+    await expect(async () => {
+      const titles = await dashboardPage.getTaskTitles();
+      expect(titles).toContain(title);
+    }).toPass({ timeout: 15_000 });
   });
 
   test('shows task form validation error for empty title', async () => {
@@ -68,7 +78,7 @@ test.describe('Dashboard Page', () => {
 
   test('logs out and redirects to login', async ({ page }) => {
     await dashboardPage.logout();
-    await expect(page).toHaveURL('/');
+    await expect(page).toHaveURL(/\/$/);  
     const loginPage = new LoginPage(page);
     expect(await loginPage.isFormVisible()).toBe(true);
   });

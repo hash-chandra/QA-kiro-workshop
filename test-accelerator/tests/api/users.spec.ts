@@ -38,7 +38,15 @@ test.describe('Users API', () => {
 
   test('PUT /api/users/:id updates a user', async ({ apiContext }) => {
     const api = new ApiHelper(apiContext);
-    const res = await api.put('/api/users/1', { name: 'Updated Admin' });
+    // create a dedicated user so we never mutate a shared seeded user
+    const createRes = await api.post('/api/users', {
+      name: uniqueId('User'),
+      email: randomEmail(),
+      role: 'tester',
+    });
+    const created = await createRes.json();
+
+    const res = await api.put(`/api/users/${created.id}`, { name: 'Updated Admin' });
     expect(res.status()).toBe(200);
     const body = await res.json();
     expect(body.name).toBe('Updated Admin');

@@ -25,6 +25,18 @@ Parameters:
       - BUILD_GENERAL1_MEDIUM
       - BUILD_GENERAL1_LARGE
     Description: CodeBuild compute instance size
+  BrowserStackUsernamePath:
+    Type: String
+    Default: /test-automation/browserstack/username
+    Description: SSM Parameter Store path for BrowserStack username
+  BrowserStackAccessKeyPath:
+    Type: String
+    Default: /test-automation/browserstack/access-key
+    Description: SSM Parameter Store path for BrowserStack access key
+  NightlySchedule:
+    Type: String
+    Default: cron(0 0 * * ? *)
+    Description: Cron expression for nightly test run (default midnight UTC)
 
 Resources:
   ArtifactBucket:
@@ -120,6 +132,12 @@ Resources:
                   - !Sub "arn:aws:codecommit:${AWS::Region}:${AWS::AccountId}:${RepositoryName}"
               - Effect: Allow
                 Action:
+                  - ssm:GetParameters
+                Resource:
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${BrowserStackUsernamePath}"
+                  - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${BrowserStackAccessKeyPath}"
+              - Effect: Allow
+                Action:
                   - codebuild:CreateReport
                   - codebuild:UpdateReport
                   - codebuild:BatchPutTestCases
@@ -155,6 +173,14 @@ Resources:
             Value: "http://localhost:3000"
           - Name: REPORT_BUCKET
             Value: !Ref ReportBucket
+          - Name: NIGHTLY_BROWSERSTACK
+            Value: "false"
+          - Name: BROWSERSTACK_USERNAME
+            Value: !Ref BrowserStackUsernamePath
+            Type: PARAMETER_STORE
+          - Name: BROWSERSTACK_ACCESS_KEY
+            Value: !Ref BrowserStackAccessKeyPath
+            Type: PARAMETER_STORE
       Artifacts:
         Type: S3
         Location: !Ref ArtifactBucket
@@ -185,6 +211,19 @@ Resources:
               - Effect: Allow
                 Action: codebuild:StartBuild
                 Resource: !GetAtt CodeBuildProject.Arn
+
+  NightlyBrowserStackRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub "${ProjectName}-nightly-browserstack"
+      Description: "Trigger nightly BrowserStack Chrome test run"
+      ScheduleExpression: !Ref NightlySchedule
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt CodeBuildProject.Arn
+          RoleArn: !GetAtt EventBridgeRole.Arn
+          Id: TriggerNightlyBrowserStack
+          Input: '{"environmentVariablesOverride": [{"name": "NIGHTLY_BROWSERSTACK", "value": "true", "type": "PLAINTEXT"}]}'
 
   CodeCommitPushRule:
     Type: AWS::Events::Rule

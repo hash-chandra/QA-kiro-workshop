@@ -12,6 +12,18 @@ blob-report/
 
 # Environment
 .env
+.env.local
+.env.*.local
+!.env.example
+!.env.ci
+
+# Secrets / credentials
+*.pem
+*.key
+*.p12
+.aws/
+aws-credentials*
+browserstack-credentials*
 
 # OS
 .DS_Store
@@ -22,6 +34,9 @@ Thumbs.db
 .vscode/
 *.swp
 *.swo
+
+# Tool configs (user-specific)
+.amazonq/
 
 # Logs
 *.log

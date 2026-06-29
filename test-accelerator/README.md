@@ -33,14 +33,13 @@ npm run test:debug            # run in debug mode
 npm run report                # view HTML report
 ```
 
-### BrowserStack (Cross-Browser/Device)
+### BrowserStack (Cross-Browser)
 
 ```bash
-npm run test:bs               # all BrowserStack browsers/devices
+npm run test:bs               # all BrowserStack browsers
 npm run test:bs:chrome        # Chrome on Windows 11
 npm run test:bs:firefox       # Firefox on Windows 11
 npm run test:bs:safari        # Safari on macOS Sonoma
-npm run test:bs:mobile        # Android + iPhone
 ```
 
 See [docs/browserstack.md](docs/browserstack.md) for full setup and credential configuration.
@@ -113,3 +112,20 @@ The accelerator includes prompt-driven workflows for AI-assisted QE tasks. See t
 | Generate page objects | `docs/q-workflows/05-generate-page-object.md` |
 
 Project rules in `.amazonq/rules/` auto-inject framework conventions into every Q interaction.
+
+## Playwright MCP
+
+The accelerator includes [Playwright MCP](https://github.com/microsoft/playwright-mcp)
+server config so an AI assistant can drive a real browser and generate tests
+against QE Playground:
+
+- Amazon Q Developer — `.amazonq/mcp.json`
+- VS Code (Copilot) — `.vscode/mcp.json`
+
+Both launch `@playwright/mcp` via `npx` (no global install). See
+[docs/playwright-mcp.md](docs/playwright-mcp.md) for setup and usage.
+
+## MVP Status & Roadmap
+
+See [docs/MVP_STATUS.md](docs/MVP_STATUS.md) for the delivered MVP scope,
+validation summary, known gaps/limitations, and next-phase recommendations.

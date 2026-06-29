@@ -1,6 +1,6 @@
 # BrowserStack Integration
 
-Cross-browser and device execution via BrowserStack Automate using the `browserstack-node-sdk`.
+Cross-browser execution via BrowserStack Automate using the `browserstack-node-sdk`.
 
 ## Prerequisites
 
@@ -55,18 +55,6 @@ The `browserstack-node-sdk` wraps the Playwright runner, automatically:
 | Chrome | Windows 11 | latest |
 | Firefox | Windows 11 | latest |
 | WebKit | macOS Sonoma | latest |
-
-To add mobile devices, add entries to `browserstack.yml`:
-
-```yaml
-platforms:
-  - deviceName: Samsung Galaxy S24
-    osVersion: 14.0
-    browserName: chrome
-  - deviceName: iPhone 15
-    osVersion: 17
-    browserName: webkit
-```
 
 ## Viewing Results
 

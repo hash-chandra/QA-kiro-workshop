@@ -59,7 +59,11 @@ test.describe('Tasks API', () => {
 
   test('PUT /api/tasks/:id updates a task', async ({ apiContext }) => {
     const api = new ApiHelper(apiContext);
-    const res = await api.put('/api/tasks/1', { title: 'Updated task title' });
+    // create a dedicated task so we never mutate a shared seeded task
+    const createRes = await api.post('/api/tasks', randomTask());
+    const created = await createRes.json();
+
+    const res = await api.put(`/api/tasks/${created.id}`, { title: 'Updated task title' });
     expect(res.status()).toBe(200);
     const body = await res.json();
     expect(body.title).toBe('Updated task title');
