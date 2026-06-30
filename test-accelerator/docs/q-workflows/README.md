@@ -1,61 +1,36 @@
-# Amazon Q Workflows for QE Playground & Test Accelerator
+# Amazon Q Workflows
 
-## Philosophy
+Prompt-driven workflows for AI-assisted test automation using Amazon Q Developer.
 
-**Spec files define design decisions. Amazon Q discovers everything else from source code.**
+## How It Works
 
-| We specify                       | Amazon Q discovers from source           |
-|----------------------------------|------------------------------------------|
-| Project structure & file layout  | Actual `data-testid` selectors           |
-| Locator strategy priority        | API endpoints, methods, query params     |
-| Playwright config settings       | Required fields & validation schemas     |
-| Import conventions & code style  | HTTP status codes & response shapes      |
-| Environment config shape         | Seed data, credentials, task statuses    |
-| npm scripts & framework patterns | Page object methods & test cases         |
+| Layer | Location | Purpose |
+|---|---|---|
+| **Project Rules** | `.amazonq/rules/` | Auto-injected into every Q interaction — enforces conventions |
+| **Workflow Templates** | `docs/q-workflows/` | Copy-paste prompts for common QE tasks |
+| **Spec Files** | `docs/q-workflows/specs/` | Design decisions that guide generation |
 
-## Spec Files
+## Workflows
 
-```
-specs/
-├── qe-playground-spec.md       # Tech stack, structure, credentials, key requirements
-└── test-accelerator-spec.md    # Framework structure, locator strategy, conventions
-```
+| Workflow | File | Use When |
+|----------|------|----------|
+| Build from scratch | [build-guide.md](./build-guide.md) | Rebuilding the project from zero |
+| Generate UI tests | [01-generate-ui-test.md](./01-generate-ui-test.md) | New UI test spec + page object |
+| Generate API tests | [02-generate-api-test.md](./02-generate-api-test.md) | New API test coverage |
+| Debug & refine | [03-debug-and-refine.md](./03-debug-and-refine.md) | Fixing failures, flakiness, structure |
+| Flaky test analysis | [04-flaky-test-analysis.md](./04-flaky-test-analysis.md) | Systematic flaky test diagnosis |
+| Generate page objects | [05-generate-page-object.md](./05-generate-page-object.md) | Standalone page object scaffolding |
 
----
+## Examples
 
-## 🚀 Quick Start — Pick Your Speed
+| Example | File |
+|---------|------|
+| UI test creation walkthrough | [examples/ui-test-creation.md](./examples/ui-test-creation.md) |
+| API test improvement walkthrough | [examples/api-test-improvement.md](./examples/api-test-improvement.md) |
 
-| Guide | Prompts | Best For |
-|-------|---------|----------|
-| [BUILD_FROM_SCRATCH_GUIDE.md](./BUILD_FROM_SCRATCH_GUIDE.md) | 17 steps | Beginners, maximum control |
-| [QUICK_BUILD_GUIDE.md](./QUICK_BUILD_GUIDE.md) | 6 prompts | Balanced — fewer steps, still structured |
-| [PROFESSIONAL_STYLE_PROMPTS.md](./PROFESSIONAL_STYLE_PROMPTS.md) | 2 prompts | Power users, one-shot generation |
+## Tips
 
----
-
-## 📋 All Guides
-
-| Guide | Description |
-|-------|-------------|
-| [BUILD_FROM_SCRATCH_GUIDE.md](./BUILD_FROM_SCRATCH_GUIDE.md) | Step-by-step build with short prompts (17 steps) |
-| [QUICK_BUILD_GUIDE.md](./QUICK_BUILD_GUIDE.md) | Condensed build guide (6 prompts) |
-| [PROFESSIONAL_STYLE_PROMPTS.md](./PROFESSIONAL_STYLE_PROMPTS.md) | Power-user 2-prompt approach |
-| [DETAILED_SUB_PROMPTS.md](./DETAILED_SUB_PROMPTS.md) | Granular breakdowns for complex steps |
-| [COMMON_SCENARIOS.md](./COMMON_SCENARIOS.md) | Prompts for frequent testing scenarios |
-
-## 📖 Existing Workflow Templates
-
-| Workflow | Template |
-|----------|----------|
-| Generate UI tests | [01-generate-ui-test.md](./01-generate-ui-test.md) |
-| Generate API tests | [02-generate-api-test.md](./02-generate-api-test.md) |
-| Debug & refine tests | [03-debug-and-refine.md](./03-debug-and-refine.md) |
-| Flaky test analysis | [04-flaky-test-analysis.md](./04-flaky-test-analysis.md) |
-| Generate page objects | [05-generate-page-object.md](./05-generate-page-object.md) |
-
-## 💡 Tips
-
-- Attach spec files using the **paperclip icon** or `@` mention in Amazon Q chat
-- For test framework steps, also attach QE Playground source files so Amazon Q discovers selectors, API contracts, and seed data automatically
-- Verify each phase before moving to the next
-- If a step fails, paste the error into Amazon Q and ask it to fix
+- **Always use `@` file references** — Q produces dramatically better output when it sees your existing patterns
+- **Split complex tasks** — page object first, then test spec
+- **Iterate: prompt → run → refine** — paste errors back to Q
+- **Be specific about scenarios** — "verify empty form shows validation" beats "test the login page"

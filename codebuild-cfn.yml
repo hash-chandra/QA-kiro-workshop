@@ -37,10 +37,10 @@ Parameters:
     Type: String
     Default: cron(0 0 * * ? *)
     Description: Cron expression for nightly test run (default midnight UTC)
-
-Tags:
-  - Key: Project
-    Value: box-cc-jg-qa-2026
+  ProjectTag:
+    Type: String
+    Default: box-cc-jg-qa-2026
+    Description: Cost allocation tag value for the Project key
 
 Resources:
   ArtifactBucket:
@@ -49,7 +49,7 @@ Resources:
       BucketName: !Sub "${ProjectName}-artifacts-${AWS::AccountId}"
       Tags:
         - Key: Project
-          Value: box-cc-jg-qa-2026
+          Value: !Ref ProjectTag
       LifecycleConfiguration:
         Rules:
           - Id: ExpireOldArtifacts
@@ -71,7 +71,7 @@ Resources:
       BucketName: !Sub "${ProjectName}-reports-${AWS::AccountId}"
       Tags:
         - Key: Project
-          Value: box-cc-jg-qa-2026
+          Value: !Ref ProjectTag
       WebsiteConfiguration:
         IndexDocument: index.html
         ErrorDocument: index.html
@@ -105,7 +105,7 @@ Resources:
       RoleName: !Sub "${ProjectName}-codebuild-role"
       Tags:
         - Key: Project
-          Value: box-cc-jg-qa-2026
+          Value: !Ref ProjectTag
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -165,7 +165,7 @@ Resources:
       Description: "Playwright test execution pipeline for test-automation-accelerator"
       Tags:
         - Key: Project
-          Value: box-cc-jg-qa-2026
+          Value: !Ref ProjectTag
       ServiceRole: !GetAtt CodeBuildRole.Arn
       TimeoutInMinutes: 30
       Source:
@@ -187,6 +187,8 @@ Resources:
             Value: "http://localhost:5173"
           - Name: API_BASE_URL
             Value: "http://localhost:3000"
+          - Name: NODE_OPTIONS
+            Value: "--max-old-space-size=4096"
           - Name: REPORT_BUCKET
             Value: !Ref ReportBucket
           - Name: NIGHTLY_BROWSERSTACK
@@ -217,7 +219,7 @@ Resources:
       RoleName: !Sub "${ProjectName}-eventbridge-role"
       Tags:
         - Key: Project
-          Value: box-cc-jg-qa-2026
+          Value: !Ref ProjectTag
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -241,7 +243,7 @@ Resources:
       Description: "Trigger nightly BrowserStack Chrome test run"
       Tags:
         - Key: Project
-          Value: box-cc-jg-qa-2026
+          Value: !Ref ProjectTag
       ScheduleExpression: !Ref NightlySchedule
       State: ENABLED
       Targets:
@@ -257,7 +259,7 @@ Resources:
       Description: "Trigger CodeBuild on push to main branch"
       Tags:
         - Key: Project
-          Value: box-cc-jg-qa-2026
+          Value: !Ref ProjectTag
       EventPattern:
         source:
           - aws.codecommit

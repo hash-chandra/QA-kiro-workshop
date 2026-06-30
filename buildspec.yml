@@ -1,13 +1,5 @@
 version: 0.2
 
-env:
-  variables:
-    CI: "true"
-    ENV: "dev"
-    BASE_URL: "http://localhost:5173"
-    API_BASE_URL: "http://localhost:3000"
-    NODE_OPTIONS: "--max-old-space-size=4096"
-
 phases:
   install:
     runtime-versions:
@@ -20,15 +12,9 @@ phases:
       - cd $CODEBUILD_SRC_DIR/test-accelerator && npm ci
       - npx playwright install --with-deps chromium
 
-  pre_build:
-    commands:
-      - echo "Application lifecycle is managed by Playwright's webServer config."
-      - echo "In CI it starts the qe-playground server (3000) and client (5173) fresh."
-
   build:
     on-failure: CONTINUE
     commands:
-      - echo "Running Playwright tests..."
       - cd $CODEBUILD_SRC_DIR/test-accelerator
       - echo "Linting..."
       - npm run lint 2>&1 || LINT_EXIT_CODE=$?
@@ -37,6 +23,7 @@ phases:
           echo "Running nightly BrowserStack Chrome tests..."
           BROWSERSTACK_BUILD_NAME="nightly-$(date +%Y-%m-%d)" npm run test:bs:chrome 2>&1 || TEST_EXIT_CODE=$?
         else
+          echo "Running Playwright tests..."
           npx playwright test 2>&1 || TEST_EXIT_CODE=$?
         fi
       - echo "Tests completed with exit code ${TEST_EXIT_CODE:-0} (lint exit code ${LINT_EXIT_CODE:-0})"
