@@ -26,6 +26,7 @@ phases:
       - echo "In CI it starts the qe-playground server (3000) and client (5173) fresh."
 
   build:
+    on-failure: CONTINUE
     commands:
       - echo "Running Playwright tests..."
       - cd $CODEBUILD_SRC_DIR/test-accelerator
