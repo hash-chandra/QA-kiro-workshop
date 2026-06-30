@@ -215,6 +215,9 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Sub "${ProjectName}-eventbridge-role"
+      Tags:
+        - Key: Project
+          Value: box-cc-jg-qa-2026
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -236,6 +239,9 @@ Resources:
     Properties:
       Name: !Sub "${ProjectName}-nightly-browserstack"
       Description: "Trigger nightly BrowserStack Chrome test run"
+      Tags:
+        - Key: Project
+          Value: box-cc-jg-qa-2026
       ScheduleExpression: !Ref NightlySchedule
       State: ENABLED
       Targets:
@@ -249,6 +255,9 @@ Resources:
     Properties:
       Name: !Sub "${ProjectName}-on-push"
       Description: "Trigger CodeBuild on push to main branch"
+      Tags:
+        - Key: Project
+          Value: box-cc-jg-qa-2026
       EventPattern:
         source:
           - aws.codecommit

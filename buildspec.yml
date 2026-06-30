@@ -77,3 +77,8 @@ artifacts:
   base-directory: "."
   name: "test-results-$(date +%Y-%m-%d-%H%M%S)"
   discard-paths: no
+
+cache:
+  paths:
+    - '/root/.npm/**/*'
+    - '/root/.cache/ms-playwright/**/*'
