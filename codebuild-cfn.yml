@@ -38,11 +38,18 @@ Parameters:
     Default: cron(0 0 * * ? *)
     Description: Cron expression for nightly test run (default midnight UTC)
 
+Tags:
+  - Key: Project
+    Value: box-cc-jg-qa-2026
+
 Resources:
   ArtifactBucket:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: !Sub "${ProjectName}-artifacts-${AWS::AccountId}"
+      Tags:
+        - Key: Project
+          Value: box-cc-jg-qa-2026
       LifecycleConfiguration:
         Rules:
           - Id: ExpireOldArtifacts
@@ -62,6 +69,9 @@ Resources:
     Type: AWS::S3::Bucket
     Properties:
       BucketName: !Sub "${ProjectName}-reports-${AWS::AccountId}"
+      Tags:
+        - Key: Project
+          Value: box-cc-jg-qa-2026
       WebsiteConfiguration:
         IndexDocument: index.html
         ErrorDocument: index.html
@@ -93,6 +103,9 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Sub "${ProjectName}-codebuild-role"
+      Tags:
+        - Key: Project
+          Value: box-cc-jg-qa-2026
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -150,6 +163,9 @@ Resources:
     Properties:
       Name: !Ref ProjectName
       Description: "Playwright test execution pipeline for test-automation-accelerator"
+      Tags:
+        - Key: Project
+          Value: box-cc-jg-qa-2026
       ServiceRole: !GetAtt CodeBuildRole.Arn
       TimeoutInMinutes: 30
       Source:
@@ -187,6 +203,9 @@ Resources:
         Packaging: ZIP
         NamespaceType: BUILD_ID
         OverrideArtifactName: true
+      Cache:
+        Type: S3
+        Location: !Sub "${ArtifactBucket}/cache"
       LogsConfig:
         CloudWatchLogs:
           Status: ENABLED
