@@ -21,7 +21,9 @@ phases:
       - |
         if [ "$NIGHTLY_BROWSERSTACK" = "true" ]; then
           echo "Running nightly BrowserStack Chrome tests..."
-          BROWSERSTACK_BUILD_NAME="nightly-$(date +%Y-%m-%d)" npm run test:bs:chrome 2>&1 || TEST_EXIT_CODE=$?
+          BUILD_NAME="nightly-$(date +%Y-%m-%d)"
+          sed -i "s|buildName:.*|buildName: $BUILD_NAME|" config/browserstack/browserstack.chrome.yml
+          npm run test:bs:chrome 2>&1 || TEST_EXIT_CODE=$?
         else
           echo "Running Playwright tests..."
           npx playwright test 2>&1 || TEST_EXIT_CODE=$?
