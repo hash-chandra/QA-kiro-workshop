@@ -42,7 +42,7 @@ npm run test:bs:firefox       # Firefox on Windows 11
 npm run test:bs:safari        # Safari on macOS Sonoma
 ```
 
-See [docs-amazonQ/browserstack.md](docs-amazonQ/browserstack.md) for full setup and credential configuration.
+See [docs-kiro/browserstack.md](docs-kiro/browserstack.md) for full setup and credential configuration.
 
 ## Environment Configuration
 
@@ -89,7 +89,7 @@ Set variables in `.env` or export them before running:
 │       ├── users.spec.ts
 │       ├── health.spec.ts
 │       └── unstable.spec.ts
-├── docs-amazonQ/                 # Amazon Q workflow docs & prompts
+├── docs-amazonQ/                 # Amazon Q workflow docs (legacy reference)
 ├── docs-kiro/                    # Kiro-specific docs, sessions, steering
 ├── arize/                        # Arize Phoenix failure analysis scripts
 ├── playwright.config.ts
@@ -106,19 +106,19 @@ Set variables in `.env` or export them before running:
 - **Environment Config** — single source of truth in `config/env.config.ts`
 - **Separated Projects** — Playwright config defines independent UI (Chromium) and API projects
 
-## Amazon Q Developer Workflows
+## Kiro Workflows
 
-The accelerator includes prompt-driven workflows for AI-assisted QE tasks. See the full guide at `docs-amazonQ/q-workflows/README.md`.
+The accelerator includes AI-assisted workflows for QE tasks using Kiro. See the docs at `docs-kiro/`.
 
-| Workflow | Template |
+| Workflow | Description |
 |---|---|
-| Generate UI tests | `docs-amazonQ/q-workflows/prompts/01-generate-ui-test.md` |
-| Generate API tests | `docs-amazonQ/q-workflows/prompts/02-generate-api-test.md` |
-| Debug & refine tests | `docs-amazonQ/q-workflows/prompts/03-debug-and-refine.md` |
-| Flaky test analysis | `docs-amazonQ/q-workflows/prompts/04-flaky-test-analysis.md` |
-| Generate page objects | `docs-amazonQ/q-workflows/prompts/05-generate-page-object.md` |
+| Generate UI tests | AI-assisted UI test generation using specs and steering |
+| Generate API tests | AI-assisted API test generation from route source files |
+| Debug & refine tests | Iterative debugging with Kiro vibe sessions |
+| Flaky test analysis | Root-cause analysis for flaky tests |
+| Generate page objects | Page Object scaffolding from app source |
 
-Project rules in `.amazonq/rules/` auto-inject framework conventions into every Q interaction.
+Project conventions in `.kiro/steering/` auto-inject framework patterns into every Kiro interaction.
 
 ## Playwright MCP
 
@@ -126,7 +126,7 @@ The accelerator includes [Playwright MCP](https://github.com/microsoft/playwrigh
 server config so an AI assistant can drive a real browser and generate tests
 against QE Playground:
 
-- Amazon Q Developer — `.amazonq/mcp.json`
+- Kiro — `.kiro/settings/mcp.json`
 - VS Code (Copilot) — `.vscode/mcp.json`
 
 Both launch `@playwright/mcp` via `npx` (no global install).

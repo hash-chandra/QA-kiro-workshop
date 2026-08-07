@@ -1,6 +1,6 @@
 # Intelligent Test Automation Accelerator — Workspace
 
-A monorepo for the QE CoE **Intelligent Test Automation Accelerator** (AWS BOX funded). It combines AI-assisted test generation (Amazon Q Developer), cross-browser execution (BrowserStack), and AWS-native CI/CD (CodeBuild) into a reusable Playwright framework.
+A monorepo for the QE CoE **Intelligent Test Automation Accelerator** (AWS BOX funded). It combines AI-assisted test generation (Kiro), cross-browser execution (BrowserStack), and AWS-native CI/CD (CodeBuild) into a reusable Playwright framework.
 
 ## Workspace Structure
 
@@ -59,12 +59,12 @@ AWS CodeBuild pipeline defined in `buildspec.yml` + `codebuild-cfn.yml`:
 
 - [Test Accelerator README](test-accelerator/README.md) — framework details, patterns, and commands
 - [QE Playground README](qe-playground/README.md) — API endpoints and app architecture
-- [BrowserStack Setup](test-accelerator/docs-amazonQ/browserstack.md) — credential configuration
-- [Amazon Q Workflows](test-accelerator/docs-amazonQ/q-workflows/README.md) — AI-assisted test generation prompts
+- [BrowserStack Setup](test-accelerator/docs-kiro/browserstack.md) — credential configuration
+- [Kiro Workflows](test-accelerator/docs-kiro/) — AI-assisted test generation workflows
 
 ## Prerequisites
 
 - Node.js ≥ 22
 - npm
 - (Optional) BrowserStack account for cross-browser testing
-- (Optional) Amazon Q Developer extension for AI-assisted workflows
+- (Optional) Kiro IDE for AI-assisted workflows
