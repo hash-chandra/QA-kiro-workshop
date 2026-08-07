@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "install:all": "cd server && npm install && cd ../client && npm install",
-    "kill:ports": "lsof -ti:3000 | xargs kill -9 2>/dev/null; lsof -ti:5173 | xargs kill -9 2>/dev/null; echo 'Ports 3000 and 5173 cleared'",
+    "kill:ports": "npx --yes kill-port 3000 5173 || true",
     "dev": "npm run kill:ports && concurrently \"npm run dev:server\" \"npm run dev:client\"",
     "dev:server": "cd server && npm run dev",
     "dev:client": "cd client && npm run dev",

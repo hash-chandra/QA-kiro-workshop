@@ -7,7 +7,12 @@ export default defineConfig({
   forbidOnly: ENV.isCI,
   retries: ENV.isCI ? 2 : 0,
   workers: ENV.isCI ? 1 : undefined,
-  reporter: [['html'], ['list'], ['json', { outputFile: 'test-results/results.json' }]],
+  reporter: [
+    ['html'],
+    ['list'],
+    ['json', { outputFile: 'test-results/results.json' }],
+    ['./src/reporters/arize-phoenix.reporter.ts'],
+  ],
   webServer: [
     {
       command: 'npm --prefix ../qe-playground run start:server',

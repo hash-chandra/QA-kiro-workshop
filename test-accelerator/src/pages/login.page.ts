@@ -15,25 +15,20 @@ export class LoginPage extends BasePage {
   async login(email: string, password: string): Promise<void> {
     await this.emailInput.waitFor({ state: 'visible' });
     await this.emailInput.fill(email);
-    await this.passwordInput.waitFor({ state: 'visible' });
     await this.passwordInput.fill(password);
-    await this.loginButton.waitFor({ state: 'visible' });
     await this.loginButton.click();
   }
 
   async getErrorMessage(): Promise<string> {
-    const message = await this.waitForText(this.loginError);
-    return message;
+    return this.waitForText(this.loginError);
   }
 
   async isFormVisible(): Promise<boolean> {
-    const visible = await this.waitForVisible(this.loginForm);
-    return visible;
+    return this.waitForVisible(this.loginForm);
   }
 
   async isLoginButtonDisabled(): Promise<boolean> {
     await this.loginButton.waitFor({ state: 'visible' });
-    const disabled = await this.loginButton.isDisabled();
-    return disabled;
+    return this.loginButton.isDisabled();
   }
 }

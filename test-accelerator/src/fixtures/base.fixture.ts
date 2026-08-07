@@ -1,9 +1,12 @@
-import { test as base, APIRequestContext } from '@playwright/test';
+import { test as base, APIRequestContext, Page } from '@playwright/test';
 import { ENV } from '../../config/env.config';
+import { LoginPage } from '../pages/login.page';
+import { DashboardPage } from '../pages/dashboard.page';
 
 type Fixtures = {
   apiContext: APIRequestContext;
   authedApiContext: APIRequestContext;
+  loggedInPage: { page: Page; dashboardPage: DashboardPage };
 };
 
 export const test = base.extend<Fixtures>({
@@ -24,6 +27,15 @@ export const test = base.extend<Fixtures>({
     });
     await use(ctx);
     await ctx.dispose();
+  },
+
+  loggedInPage: async ({ page }, use) => {
+    const loginPage = new LoginPage(page);
+    await loginPage.open();
+    await loginPage.login(ENV.testUsers.admin.email, ENV.testUsers.admin.password);
+    await page.waitForURL(/\/dashboard/);
+    const dashboardPage = new DashboardPage(page);
+    await use({ page, dashboardPage });
   },
 });
 

@@ -1,3 +1,5 @@
+import { ENV } from '../../config/env.config';
+
 export function uniqueId(prefix = 'test'): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 }
@@ -13,7 +15,5 @@ export function randomTask(): { title: string; status: string; assignee: string 
     assignee: 'tester@playground.dev',
   };
 }
-
-import { ENV } from '../../config/env.config';
 
 export const TEST_USERS = ENV.testUsers;

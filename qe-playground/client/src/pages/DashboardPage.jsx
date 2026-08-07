@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
-import { getTasks, createTask, deleteTask } from '../api/client';
+import { getTasks, createTask, updateTask, deleteTask } from '../api/client';
 import TaskForm from '../components/TaskForm';
+import ConfirmDialog from '../components/ConfirmDialog';
+import EditTaskModal from '../components/EditTaskModal';
+import { showToast } from '../components/Toast';
 
 export default function DashboardPage({ user }) {
   const [tasks, setTasks] = useState([]);
@@ -8,6 +11,8 @@ export default function DashboardPage({ user }) {
   const [statusFilter, setStatusFilter] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [editTarget, setEditTarget] = useState(null);
 
   async function loadTasks() {
     setLoading(true);
@@ -24,11 +29,27 @@ export default function DashboardPage({ user }) {
   async function handleCreate(data) {
     await createTask(data);
     setShowForm(false);
+    showToast('Task created successfully');
     loadTasks();
   }
 
-  async function handleDelete(id) {
-    await deleteTask(id);
+  function confirmDelete(task) {
+    setDeleteTarget(task);
+  }
+
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    await deleteTask(deleteTarget.id);
+    setDeleteTarget(null);
+    showToast('Task deleted successfully');
+    loadTasks();
+  }
+
+  async function handleEdit(data) {
+    if (!editTarget) return;
+    await updateTask(editTarget.id, data);
+    setEditTarget(null);
+    showToast('Task updated successfully');
     loadTasks();
   }
 
@@ -46,11 +67,13 @@ export default function DashboardPage({ user }) {
           value={search}
           onChange={e => setSearch(e.target.value)}
           data-testid="search-input"
+          aria-label="Search tasks"
         />
         <select
           value={statusFilter}
           onChange={e => setStatusFilter(e.target.value)}
           data-testid="status-filter"
+          aria-label="Filter by status"
         >
           <option value="">All statuses</option>
           <option value="todo">Todo</option>
@@ -69,7 +92,7 @@ export default function DashboardPage({ user }) {
       ) : tasks.length === 0 ? (
         <p data-testid="no-tasks-message">No tasks found</p>
       ) : (
-        <table data-testid="task-table">
+        <table data-testid="task-table" aria-label="Tasks">
           <thead>
             <tr>
               <th>ID</th>
@@ -88,9 +111,18 @@ export default function DashboardPage({ user }) {
                 <td>{task.assignee}</td>
                 <td>
                   <button
+                    className="btn-edit btn-sm"
+                    onClick={() => setEditTarget(task)}
+                    data-testid={`edit-task-${task.id}`}
+                    aria-label={`Edit task: ${task.title}`}
+                  >
+                    Edit
+                  </button>{' '}
+                  <button
                     className="btn-danger btn-sm"
-                    onClick={() => handleDelete(task.id)}
+                    onClick={() => confirmDelete(task)}
                     data-testid={`delete-task-${task.id}`}
+                    aria-label={`Delete task: ${task.title}`}
                   >
                     Delete
                   </button>
@@ -101,7 +133,23 @@ export default function DashboardPage({ user }) {
         </table>
       )}
 
-      <p data-testid="task-count">{tasks.length} task(s)</p>
+      {!loading && <p data-testid="task-count">{tasks.length} task(s)</p>}
+
+      {deleteTarget && (
+        <ConfirmDialog
+          message={`Are you sure you want to delete "${deleteTarget.title}"?`}
+          onConfirm={handleDelete}
+          onCancel={() => setDeleteTarget(null)}
+        />
+      )}
+
+      {editTarget && (
+        <EditTaskModal
+          task={editTarget}
+          onSave={handleEdit}
+          onCancel={() => setEditTarget(null)}
+        />
+      )}
     </div>
   );
 }

@@ -42,7 +42,7 @@ npm run test:bs:firefox       # Firefox on Windows 11
 npm run test:bs:safari        # Safari on macOS Sonoma
 ```
 
-See [docs/browserstack.md](docs/browserstack.md) for full setup and credential configuration.
+See [docs-amazonQ/browserstack.md](docs-amazonQ/browserstack.md) for full setup and credential configuration.
 
 ## Environment Configuration
 
@@ -61,31 +61,38 @@ Set variables in `.env` or export them before running:
 
 ```
 ├── config/
-│   └── env.config.ts             # centralized environment config
+│   ├── base.config.ts            # shared Playwright settings
+│   ├── env.config.ts             # centralized environment config
+│   └── browserstack/             # BrowserStack YAML configs
 ├── src/
 │   ├── fixtures/
-│   │   └── base.fixture.ts       # custom test fixtures (apiContext, authedApiContext)
+│   │   └── base.fixture.ts       # custom test fixtures (apiContext, authedApiContext, loggedInPage)
 │   ├── helpers/
 │   │   ├── api.helper.ts         # reusable API request helper
 │   │   ├── wait.helper.ts        # wait/retry utilities
 │   │   ├── test-data.helper.ts   # test data generation & test credentials
 │   │   └── index.ts              # barrel export
-│   └── pages/
-│       ├── base.page.ts          # base page object
-│       ├── login.page.ts         # login page object
-│       ├── dashboard.page.ts     # dashboard page object
-│       └── index.ts              # barrel export
+│   ├── pages/
+│   │   ├── base.page.ts          # base page object
+│   │   ├── login.page.ts         # login page object
+│   │   ├── dashboard.page.ts     # dashboard page object (CRUD, edit modal, confirm dialog, toast)
+│   │   └── index.ts              # barrel export
+│   └── reporters/
+│       └── arize-phoenix.reporter.ts  # OpenTelemetry reporter for Arize Phoenix
 ├── tests/
 │   ├── ui/                       # UI test specs
 │   │   ├── login.spec.ts
-│   │   └── dashboard.spec.ts
+│   │   └── dashboard.spec.ts    # includes toast, edit modal, delete dialog tests
 │   └── api/                      # API test specs
 │       ├── auth.spec.ts
 │       ├── tasks.spec.ts
 │       ├── users.spec.ts
 │       ├── health.spec.ts
 │       └── unstable.spec.ts
-├── playwright.config.ts          # Playwright config (UI + API projects)
+├── docs-amazonQ/                 # Amazon Q workflow docs & prompts
+├── docs-kiro/                    # Kiro-specific docs, sessions, steering
+├── arize/                        # Arize Phoenix failure analysis scripts
+├── playwright.config.ts
 ├── tsconfig.json
 ├── .env.example
 └── package.json
@@ -94,22 +101,22 @@ Set variables in `.env` or export them before running:
 ## Framework Patterns
 
 - **Page Object Model** — extend `BasePage` in `src/pages/` for UI abstractions
-- **Custom Fixtures** — import `test` from `src/fixtures/base.fixture.ts` for shared setup (`apiContext`, `authedApiContext`)
+- **Custom Fixtures** — import `test` from `src/fixtures/base.fixture.ts` for shared setup (`apiContext`, `authedApiContext`, `loggedInPage`)
 - **Helpers** — reusable utilities in `src/helpers/` (API calls, waits, test data, credentials)
 - **Environment Config** — single source of truth in `config/env.config.ts`
 - **Separated Projects** — Playwright config defines independent UI (Chromium) and API projects
 
 ## Amazon Q Developer Workflows
 
-The accelerator includes prompt-driven workflows for AI-assisted QE tasks. See the full guide at `docs/q-workflows/Q_USAGE_GUIDE.md`.
+The accelerator includes prompt-driven workflows for AI-assisted QE tasks. See the full guide at `docs-amazonQ/q-workflows/README.md`.
 
 | Workflow | Template |
 |---|---|
-| Generate UI tests | `docs/q-workflows/01-generate-ui-test.md` |
-| Generate API tests | `docs/q-workflows/02-generate-api-test.md` |
-| Debug & refine tests | `docs/q-workflows/03-debug-and-refine.md` |
-| Flaky test analysis | `docs/q-workflows/04-flaky-test-analysis.md` |
-| Generate page objects | `docs/q-workflows/05-generate-page-object.md` |
+| Generate UI tests | `docs-amazonQ/q-workflows/prompts/01-generate-ui-test.md` |
+| Generate API tests | `docs-amazonQ/q-workflows/prompts/02-generate-api-test.md` |
+| Debug & refine tests | `docs-amazonQ/q-workflows/prompts/03-debug-and-refine.md` |
+| Flaky test analysis | `docs-amazonQ/q-workflows/prompts/04-flaky-test-analysis.md` |
+| Generate page objects | `docs-amazonQ/q-workflows/prompts/05-generate-page-object.md` |
 
 Project rules in `.amazonq/rules/` auto-inject framework conventions into every Q interaction.
 
@@ -122,10 +129,13 @@ against QE Playground:
 - Amazon Q Developer — `.amazonq/mcp.json`
 - VS Code (Copilot) — `.vscode/mcp.json`
 
-Both launch `@playwright/mcp` via `npx` (no global install). See
-[docs/playwright-mcp.md](docs/playwright-mcp.md) for setup and usage.
+Both launch `@playwright/mcp` via `npx` (no global install).
 
-## MVP Status & Roadmap
+## Arize Phoenix (Observability)
 
-See [docs/MVP_STATUS.md](docs/MVP_STATUS.md) for the delivered MVP scope,
-validation summary, known gaps/limitations, and next-phase recommendations.
+Test execution spans are exported to Arize Phoenix via OpenTelemetry. See `arize/README.md` for setup.
+
+```bash
+pip install arize-phoenix && phoenix serve   # start Phoenix UI
+npm test                                      # spans auto-export to http://localhost:6006
+```

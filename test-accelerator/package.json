@@ -14,13 +14,19 @@
     "test:bs:firefox": "BROWSERSTACK_CONFIG_FILE=config/browserstack/browserstack.firefox.yml npx browserstack-node-sdk playwright test --config=browserstack.config.ts",
     "test:bs:safari": "BROWSERSTACK_CONFIG_FILE=config/browserstack/browserstack.webkit.yml npx browserstack-node-sdk playwright test --config=browserstack.config.ts",
     "lint": "eslint .",
-    "report": "npx playwright show-report"
+    "report": "npx playwright show-report",
+    "analyze": "python arize/analyze_failures.py",
+    "phoenix": "phoenix serve"
   },
   "engines": {
     "node": ">=22"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
+    "@opentelemetry/exporter-trace-otlp-proto": "^0.220.0",
+    "@opentelemetry/resources": "^2.9.0",
+    "@opentelemetry/sdk-trace-base": "^2.9.0",
+    "@opentelemetry/semantic-conventions": "^1.43.0",
     "@playwright/test": "1.59.1",
     "@types/node": "25.6.0",
     "browserstack-node-sdk": "^1.56.3",

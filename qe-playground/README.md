@@ -28,9 +28,21 @@ npm run dev:client    # Vite React app on http://localhost:5173
 | Page       | Route        | Key Elements                                                  |
 |------------|--------------|---------------------------------------------------------------|
 | Login      | `/`          | Email/password form, validation errors, redirect on success   |
-| Dashboard  | `/dashboard` | Task table, search, status filter, add/delete tasks, welcome message |
+| Dashboard  | `/dashboard` | Task table, search, status filter, create/edit/delete tasks, confirm dialog, toast notifications, welcome message |
 
 All interactive elements expose `data-testid` attributes for reliable test selectors.
+
+### UI Components
+
+| Component | `data-testid` | Description |
+|-----------|---------------|-------------|
+| Task table | `task-table` | Sortable table with ID, title, status, assignee, actions |
+| Search | `search-input` | Filters tasks by title |
+| Status filter | `status-filter` | Dropdown: All / Todo / In Progress / Done |
+| Add task form | `task-form` | Title, status, assignee fields with validation |
+| Edit modal | `edit-task-modal` | Pre-filled form to update task fields |
+| Confirm dialog | `confirm-dialog` | "Are you sure?" prompt before delete |
+| Toast | `toast-message` | Success notification (auto-dismiss after 3s) |
 
 ## API Endpoints
 
@@ -71,7 +83,7 @@ All interactive elements expose `data-testid` attributes for reliable test selec
 ├── client/                   # React (Vite) front-end
 │   └── src/
 │       ├── api/client.js     # API client (fetch wrappers)
-│       ├── components/       # Navbar, TaskForm
+│       ├── components/       # Navbar, TaskForm, EditTaskModal, ConfirmDialog, Toast
 │       └── pages/            # LoginPage, DashboardPage
 ├── server/                   # Fastify back-end
 │   └── src/
