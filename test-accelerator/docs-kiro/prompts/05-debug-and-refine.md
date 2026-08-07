@@ -1,10 +1,10 @@
 # Prompt: Debug and Refine Tests
 
-Use these prompts to debug failures, fix flaky tests, and refactor test code with Kiro.
+Use these prompts to debug failures, fix flaky tests, and refactor test code.
 
 ---
 
-## Template — Debug a Failing Test
+## Debug a Failing Test
 
 ```
 Look at #Terminal — the test "[test name]" is failing.
@@ -19,7 +19,7 @@ Identify the root cause and fix it. Explain what went wrong and why.
 
 ---
 
-## Template — Flaky Test Analysis
+## Flaky Test Analysis
 
 ```
 This test is flaky — passes sometimes, fails other times:
@@ -37,7 +37,7 @@ Propose a robust fix. If multiple issues exist, address them all.
 
 ---
 
-## Template — Bulk Error Fixing
+## Bulk Error Fixing
 
 ```
 Look at #Terminal — multiple tests are failing after [describe change].
@@ -52,7 +52,7 @@ If tests are wrong, fix the test logic.
 
 ---
 
-## Template — Refactor Repeated Code
+## Refactor Repeated Code
 
 ```
 Look at #Folder tests/ui/ (or tests/api/)
@@ -63,35 +63,11 @@ Identify:
 - Common patterns that should be extracted to fixtures
 
 Refactor to reduce duplication while maintaining test independence.
-Follow conventions in .kiro/steering/.
 ```
 
 ---
 
-## Template — Upgrade Locator Strategy
-
-```
-Look at #Folder tests/ and #Folder src/pages/
-
-Find any usage of:
-- CSS class selectors (.class-name)
-- Tag-based selectors (div > span)
-- nth-child or index-based selectors
-- XPath
-
-Refactor to our locator priority:
-1. getByTestId
-2. getByRole  
-3. getByLabel
-4. CSS selector (last resort)
-
-If a getByTestId doesn't exist in the app source, list what 
-data-testid attributes should be added.
-```
-
----
-
-## Template — Performance Optimization
+## Performance Optimization
 
 ```
 Look at #File [test file path]
@@ -100,48 +76,42 @@ This test suite takes [X seconds] to run. Analyze for:
 - Unnecessary page navigations (could reuse state?)
 - Redundant waits or fixed timeouts
 - Tests that could run in parallel
-- API setup that could replace UI setup (faster)
+- API setup that could replace slower UI setup
 
 Optimize without sacrificing reliability or independence.
 ```
 
 ---
 
-## Template — Split Large Test File
+## Split Large Test File
 
 ```
 #File [large test file] has grown to [N] lines.
 
-Split it into focused files by feature area:
-- [suggestion 1].spec.ts
-- [suggestion 2].spec.ts
-- [suggestion 3].spec.ts
-
-Maintain the same coverage. Update shared setup into fixtures if needed.
-Ensure each file can run independently.
+Split into focused files by feature area. Maintain the same coverage.
+Update shared setup into fixtures if needed.
+Ensure each new file can run independently.
 ```
 
 ---
 
-## Template — Add Error Handling to Tests
+## Add Better Error Context
 
 ```
 Look at #File [test file path]
 
-Add proper error handling:
-- Meaningful assertion messages (what failed and why)
-- test.step() for complex workflows (easier debugging)
-- Screenshots on failure (if not already configured)
-- Soft assertions where appropriate (continue after first failure)
+Improve error handling:
+- Add meaningful assertion messages (what failed and why)
+- Add test.step() for complex multi-step workflows
+- Use soft assertions where appropriate (continue after first failure)
 ```
 
 ---
 
 ## Tips
 
-- **`#Terminal` is your friend** — Kiro reads actual error output
-- **`#Problems` shows current issues** — red squiggles, type errors
-- **Root cause, not band-aids** — ask Kiro to explain WHY, not just fix symptoms
-- **Re-run after fix** — have Kiro verify the fix actually works
-- **Steering keeps refactors consistent** — conventions maintained during restructuring
-- **Hooks catch regressions** — post-save hooks re-run affected tests immediately
+- `#Terminal` lets Kiro read actual error output — always include it for failures
+- `#Problems` shows current IDE diagnostics (type errors, red squiggles)
+- Ask Kiro to explain the root cause, not just patch the symptom
+- Re-run after a fix to confirm it actually resolves the issue
+- Post-save hooks can re-run affected tests automatically

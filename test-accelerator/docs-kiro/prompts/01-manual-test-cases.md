@@ -1,10 +1,10 @@
 # Prompt: Generate Manual Test Cases
 
-Use this in a Kiro Vibe session to generate comprehensive manual test cases from source code.
+Use in a Kiro Vibe session to generate manual test cases grounded in actual source code.
 
 ---
 
-## Template — From Source Code
+## From Source Code
 
 ```
 I am a QA engineer. Analyze these files:
@@ -12,8 +12,7 @@ I am a QA engineer. Analyze these files:
 - #File [path/to/backend-route.js]
 - #File [path/to/data-store.js]
 
-Based on the actual implementation, generate a complete manual test suite 
-for the [FEATURE_NAME] feature.
+Based on the implementation, generate a manual test suite for [FEATURE_NAME].
 
 Cover:
 1. Positive scenarios (valid user flows)
@@ -24,12 +23,12 @@ Cover:
 Format as:
 | Test Case ID | Category | Title | Precondition | Steps | Expected Result | Priority |
 
-Explain WHY each scenario matters based on what you found in the code.
+For each scenario, explain why it matters based on what you found in the code.
 ```
 
 ---
 
-## Template — From User Story
+## From User Story
 
 ```
 Here is a user story:
@@ -37,16 +36,16 @@ Here is a user story:
 
 Generate:
 1. Acceptance criteria in Given/When/Then format
-2. A complete test suite covering positive, negative, and edge cases
+2. A test suite covering positive, negative, and edge cases
 3. Test data requirements for each scenario
 
-Format test cases as:
+Format as:
 | ID | Category | Title | Precondition | Steps | Expected Result | Priority |
 ```
 
 ---
 
-## Template — Coverage Gap Analysis
+## Coverage Gap Analysis
 
 ```
 Here are my current test cases for [FEATURE_NAME]:
@@ -54,12 +53,12 @@ Here are my current test cases for [FEATURE_NAME]:
 [paste existing test cases]
 
 Now look at #File [source file] and #File [route file].
-What test scenarios am I missing? Rank gaps by risk (likelihood × impact).
+What scenarios am I missing? Rank gaps by risk (likelihood × impact).
 ```
 
 ---
 
-## Template — Exploratory Charter
+## Exploratory Charter
 
 ```
 I need a [TIME]-minute exploratory testing session on [FEATURE_AREA].
@@ -75,29 +74,9 @@ Generate a charter with:
 
 ---
 
-## Template — Bug Report
-
-```
-I found a bug. Here are my rough notes:
-"[paste rough notes]"
-
-Write a professional bug report:
-- Title (concise, descriptive)
-- Severity and Priority
-- Environment
-- Steps to Reproduce (numbered)
-- Expected Result
-- Actual Result
-- Attachments needed
-- Suggested root cause (if detectable from source)
-```
-
----
-
 ## Tips
 
-- Use `#File` to reference actual source — Kiro discovers real validations
-- Ask "based on the implementation" — forces source-driven scenarios
-- Combine frontend + backend files for full coverage
-- Iterate: ask Kiro to go deeper on specific risk areas
-- Use as a reviewer: paste YOUR cases and ask "what am I missing?"
+- Use `#File` to reference actual source so Kiro discovers real validations and logic
+- Combine frontend + backend files together for full-stack coverage
+- Iterate: ask Kiro to go deeper on specific risk areas after the initial suite
+- Use the coverage gap template to review your own test cases against the code

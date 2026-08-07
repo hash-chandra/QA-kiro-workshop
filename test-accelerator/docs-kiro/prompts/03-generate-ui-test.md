@@ -1,10 +1,10 @@
 # Prompt: Generate UI Test
 
-Use this in a Kiro Vibe session to generate UI tests. Reference source files — Kiro discovers selectors and derives scenarios.
+Use in a Kiro Vibe session to generate UI tests. Reference source files so Kiro discovers real selectors and derives scenarios from the implementation.
 
 ---
 
-## Template — Page Object First
+## Page Object First, Then Tests
 
 ```
 Look at #File [path/to/component.jsx] and any related components.
@@ -14,35 +14,28 @@ Follow the pattern in #File src/pages/base.page.ts.
 
 Discover all interactive elements from the source. Include methods for:
 - All user actions (create, search, filter, delete, etc.)
-- All assertions a test would need (verify element exists, count items, etc.)
-- Navigation and page load verification
+- All assertions a test would need (verify state, count items, check visibility)
+- Navigation and page-ready verification
 ```
 
 ---
 
-## Template — Test Spec (after page object exists)
+## Test Spec (after page object exists)
 
 ```
-Generate a comprehensive UI test spec at tests/ui/[feature].spec.ts.
+Generate a UI test spec at tests/ui/[feature].spec.ts.
 
 Use the page object at #File src/pages/[name].page.ts
 and follow the pattern in #File tests/ui/login.spec.ts.
 
-Cover:
-- Positive scenarios (valid user flows)
-- Negative scenarios (invalid inputs, error states)
-- Edge cases (empty states, boundary values, special characters)
-
-Requirements:
-- Each test must be independent (no shared state)
-- Use test.describe to group by feature area
-- Login before each test if the page requires authentication
-- Use test data helpers for dynamic data
+Cover positive scenarios, negative scenarios, and edge cases.
+Each test must be independent. Use test data helpers for dynamic values.
+Login before each test if the page requires authentication.
 ```
 
 ---
 
-## Template — Combined (Page Object + Tests in One Shot)
+## Combined — Page Object + Tests in One Shot
 
 ```
 Look at #File [path/to/component.jsx]
@@ -60,36 +53,21 @@ Cover positive, negative, and edge cases.
 
 ---
 
-## Template — Add Coverage to Existing Tests
+## Add Coverage to Existing Tests
 
 ```
 Look at:
 - #File tests/ui/[existing-spec].spec.ts (current tests)
 - #File [path/to/component.jsx] (source)
 
-What additional test scenarios am I missing?
-Generate ONLY the new tests (don't duplicate existing ones).
-Focus on: [validation edges / accessibility / error states / specific feature]
+What additional scenarios am I missing?
+Generate only the new tests — don't duplicate existing ones.
+Focus on: [validation edges / accessibility / error states / specific area]
 ```
 
 ---
 
-## Template — Fix Failing UI Test
-
-```
-Look at #Terminal — the test "[test name]" is failing.
-
-Also check:
-- #File [test file]
-- #File [page object]
-- #File [component source]
-
-Identify the root cause and fix it. Explain what went wrong.
-```
-
----
-
-## Template — Using Playwright MCP
+## Using Playwright MCP for Browser Discovery
 
 ```
 Use Playwright MCP to navigate to [URL].
@@ -97,7 +75,7 @@ Log in with [credentials] if needed.
 
 Explore the [page name] and:
 1. Identify all interactive elements and their best selectors
-2. Test user flows by actually clicking through them
+2. Test user flows by clicking through them
 3. Generate a page object based on the real rendered DOM
 4. Generate test specs based on actual app behavior
 ```
@@ -106,9 +84,8 @@ Explore the [page name] and:
 
 ## Tips
 
-- **Page object first, tests second** — Kiro generates better tests when the PO exists
-- **Reference actual source** — `#File` gives real selectors, not invented ones
-- **Run immediately** — generate → run → paste failure → Kiro fixes
-- **Steering handles conventions** — you don't need to repeat patterns in every prompt
-- **For dynamic content** — use Playwright MCP to see the rendered state
-- **Split complex pages** — one page object per logical area, not one per URL
+- Generate the page object first, then tests — Kiro produces better tests when the PO exists
+- Reference actual source with `#File` — gives real selectors, not guessed ones
+- Run tests immediately after generation, then paste failures back for Kiro to fix
+- For dynamic or JS-heavy content, use Playwright MCP to see the rendered state
+- Split complex pages into one page object per logical area, not one per URL
