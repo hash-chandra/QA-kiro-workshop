@@ -1,3 +1,4 @@
+import { expect } from '@playwright/test';
 import { BasePage } from './base.page';
 
 export class DashboardPage extends BasePage {
@@ -95,6 +96,9 @@ export class DashboardPage extends BasePage {
     await this.taskStatusSelect.selectOption(status);
     await this.taskAssigneeInput.fill(assignee);
     await this.submitTaskButton.click();
+    // The app closes the form once the POST resolves. Returning on the click alone
+    // let the next step run while the request was still in flight.
+    await this.taskForm.waitFor({ state: 'hidden', timeout: 15_000 });
   }
 
   async isTaskFormVisible(): Promise<boolean> {
@@ -110,15 +114,25 @@ export class DashboardPage extends BasePage {
     await this.submitTaskButton.click();
   }
 
+  /**
+   * Wait until the task list has settled into one of its two terminal states:
+   * a rendered table, or the "no tasks found" message.
+   *
+   * Waiting only for the table (the previous behaviour) meant an empty result
+   * could never be observed — the wait timed out and threw instead of returning
+   * an empty list, so assertions like "the deleted task is gone" could not pass.
+   */
+  private async waitForTaskListToSettle(timeout = 15_000): Promise<void> {
+    await this.taskTable.or(this.noTasksMessage).first().waitFor({ state: 'visible', timeout });
+  }
+
   async getTaskTitles(): Promise<string[]> {
-    const firstTitle = this.page.getByTestId('task-title').first();
-    await firstTitle.waitFor({ state: 'visible', timeout: 15_000 });
+    await this.waitForTaskListToSettle();
     return this.page.getByTestId('task-title').allInnerTexts();
   }
 
   async getTaskStatuses(): Promise<string[]> {
-    const firstStatus = this.page.getByTestId('task-status').first();
-    await firstStatus.waitFor({ state: 'visible', timeout: 15_000 });
+    await this.waitForTaskListToSettle();
     return this.page.getByTestId('task-status').allInnerTexts();
   }
 
@@ -173,6 +187,9 @@ export class DashboardPage extends BasePage {
   async confirmDeletion(): Promise<void> {
     await this.confirmOkButton.waitFor({ state: 'visible' });
     await this.confirmOkButton.click();
+    // The dialog only closes after the DELETE resolves, so this is the point at
+    // which the deletion is observably complete.
+    await this.confirmDialog.waitFor({ state: 'hidden', timeout: 15_000 });
   }
 
   async cancelDeletion(): Promise<void> {
@@ -192,6 +209,18 @@ export class DashboardPage extends BasePage {
     await this.editStatusSelect.selectOption(status);
     await this.editAssigneeInput.fill(assignee);
     await this.editSaveButton.click();
+    // Settle on whichever outcome the app produces: the modal closes on a
+    // successful save, or an inline error appears for invalid input. Returning on
+    // the click alone let the following search fire while the PUT was still in
+    // flight; the app's own refresh then resolved against the previous search term
+    // and left the table permanently empty, which no amount of retrying could fix.
+    await expect
+      .poll(
+        async () =>
+          (await this.editTaskError.isVisible()) || !(await this.editModal.isVisible()),
+        { timeout: 15_000 },
+      )
+      .toBe(true);
   }
 
   async cancelEdit(): Promise<void> {
@@ -220,17 +249,31 @@ export class DashboardPage extends BasePage {
 
   // --- Toast notifications ---
 
+  // Toasts stack, newest last. Reading `.first()` returned the oldest toast still
+  // on screen, so a stale message could satisfy an assertion about a newer action.
   async getToastMessage(): Promise<string> {
-    await this.toastMessage.first().waitFor({ state: 'visible', timeout: 5_000 });
-    return this.toastMessage.first().innerText();
+    const newest = this.toastMessage.last();
+    await newest.waitFor({ state: 'visible', timeout: 5_000 });
+    return newest.innerText();
   }
 
   async isToastVisible(): Promise<boolean> {
-    return this.waitForVisible(this.toastMessage.first(), 5_000);
+    return this.waitForVisible(this.toastMessage.last(), 5_000);
   }
 
-  async waitForToastToDisappear(): Promise<void> {
-    await this.toastMessage.first().waitFor({ state: 'hidden', timeout: 5_000 });
+  /**
+   * Wait for the current toast to appear and then clear.
+   *
+   * Both halves matter. Waiting only for "no toast present" is satisfied by a
+   * toast that has not rendered yet, so the call returned immediately and the
+   * stale message was still on screen for the next assertion. Waiting for it to
+   * appear first makes the clear meaningful. Toasts auto-dismiss after ~3s, so the
+   * disappear timeout has to exceed that.
+   */
+  async waitForToastToDisappear(timeout = 10_000): Promise<void> {
+    const visible = await this.waitForVisible(this.toastMessage.first(), 5_000);
+    if (!visible) return; // nothing was shown, nothing to clear
+    await expect(this.toastMessage).toHaveCount(0, { timeout });
   }
 
   // --- Auth ---
