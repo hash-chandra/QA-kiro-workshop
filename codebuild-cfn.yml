@@ -191,6 +191,11 @@ Resources:
                     kms:ViaService: !Sub "ssm.${AWS::Region}.amazonaws.com"
               - Effect: Allow
                 Action:
+                  # CreateReportGroup is required on the first build: the group does
+                  # not exist yet, and without it UPLOAD_ARTIFACTS fails with
+                  # AccessDeniedException even though the tests themselves passed.
+                  - codebuild:CreateReportGroup
+                  - codebuild:UpdateReportGroup
                   - codebuild:CreateReport
                   - codebuild:UpdateReport
                   - codebuild:BatchPutTestCases

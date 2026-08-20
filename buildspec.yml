@@ -21,12 +21,22 @@ phases:
       nodejs: 22
     commands:
       - mkdir -p "$STATUS_DIR"
-      - echo "Installing qe-playground dependencies..."
-      - cd "$CODEBUILD_SRC_DIR/qe-playground/server" && npm ci
-      - cd "$CODEBUILD_SRC_DIR/qe-playground/client" && npm ci
-      - echo "Installing test-accelerator dependencies..."
-      - cd "$CODEBUILD_SRC_DIR/test-accelerator" && npm ci
+      # One workspace-aware install from the repo root.
+      #
+      # Installing each package separately does not work here. The root
+      # package.json declares qe-playground/server, qe-playground/client and
+      # test-accelerator as workspaces, so `npm ci` inside one member resolves the
+      # workspace root and prunes its siblings' node_modules. Running the three in
+      # sequence left the server without fastify, the Playwright webServer failed
+      # to boot with ERR_MODULE_NOT_FOUND, and every UI test failed. The root
+      # lockfile already pins all three workspaces, so a single ci covers them.
+      - echo "Installing workspace dependencies from the repo root..."
+      - cd "$CODEBUILD_SRC_DIR" && npm ci
       - cd "$CODEBUILD_SRC_DIR/test-accelerator" && npx playwright install --with-deps chromium
+      # Fail here rather than 20 minutes later inside the webServer boot.
+      - |
+        cd "$CODEBUILD_SRC_DIR/qe-playground/server"
+        node -e "import('fastify').then(()=>console.log('dependency check: server can resolve fastify')).catch(e=>{console.error('dependency check FAILED:',e.code);process.exit(1)})"
 
   pre_build:
     commands:
