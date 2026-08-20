@@ -45,12 +45,27 @@ phases:
       - |
         cd "$CODEBUILD_SRC_DIR/qe-playground/server"
         node -e "import('fastify').then(()=>console.log('ok: server resolves fastify')).catch(e=>{console.error('FAILED: server cannot resolve fastify:',e.code);process.exit(1)})"
-        BINDING=$(ls -d "$CODEBUILD_SRC_DIR/qe-playground/client/node_modules/@rolldown/binding-"* 2>/dev/null | head -1)
-        if [ -z "$BINDING" ]; then
-          echo "FAILED: no @rolldown/binding-* installed for this platform, so the Vite dev server cannot start."
-          exit 1
+      # Check by module resolution, not by path: with a root workspace install npm
+      # hoists @rolldown/* to the root node_modules, so looking only inside
+      # qe-playground/client gives a false negative.
+      - |
+        cd "$CODEBUILD_SRC_DIR/qe-playground/client"
+        echo "rolldown bindings present in the tree:"
+        find "$CODEBUILD_SRC_DIR" -type d -name 'binding-*' -path '*@rolldown*' 2>/dev/null | sed "s|$CODEBUILD_SRC_DIR|.|" | sed 's/^/  /'
+        if node --input-type=module -e "import('rolldown')" 2>/dev/null; then
+          echo "ok: client can load the rolldown native binding"
+        else
+          # Repair path for the macOS-generated lockfile. Pin to the resolved
+          # rolldown version so the binding cannot drift from its host package.
+          RD_VER=$(node -p "require('rolldown/package.json').version" 2>/dev/null || echo "")
+          echo "rolldown failed to load; installing the linux x64 binding explicitly (rolldown=${RD_VER:-unknown})"
+          if [ -n "$RD_VER" ]; then
+            npm install --no-save --no-audit --no-fund "@rolldown/binding-linux-x64-gnu@$RD_VER" 2>&1 | tail -3
+          else
+            npm install --no-save --no-audit --no-fund @rolldown/binding-linux-x64-gnu 2>&1 | tail -3
+          fi
+          node --input-type=module -e "import('rolldown').then(()=>console.log('ok: rolldown loads after repair')).catch(e=>{console.error('FAILED: rolldown still unavailable:',e.message);process.exit(1)})"
         fi
-        echo "ok: rolldown binding present -> $(basename "$BINDING")"
 
   pre_build:
     commands:
