@@ -121,7 +121,10 @@ phases:
           BUILD_TIMESTAMP=$(date -u +%Y-%m-%d-%H%M%S)
           aws s3 sync playwright-report/ "s3://$REPORT_BUCKET/latest/" --delete
           aws s3 sync playwright-report/ "s3://$REPORT_BUCKET/runs/$BUILD_TIMESTAMP/"
-          REPORT_URL="http://$REPORT_BUCKET.s3-website-$AWS_REGION.amazonaws.com/latest/index.html"
+          # Prefer the URL CloudFormation derived from the bucket itself; the
+          # hand-assembled fallback is only correct when the bucket is in the
+          # same region as the build.
+          REPORT_URL="${REPORT_WEBSITE_URL:-http://$REPORT_BUCKET.s3-website-$AWS_REGION.amazonaws.com}/latest/index.html"
           echo ""
           echo "============================================"
           echo "  PLAYWRIGHT REPORT URL"

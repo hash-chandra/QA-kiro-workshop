@@ -72,7 +72,11 @@ Resources:
   ArtifactBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub "${ProjectName}-artifacts-${AWS::AccountId}"
+      # Region is part of the name because the S3 namespace is global. Without it a
+      # deploy of this template into a second region silently adopts the first
+      # region's buckets instead of failing, which is how the us-east-1 stack ended
+      # up owning the us-west-2 stack's buckets.
+      BucketName: !Sub "${ProjectName}-artifacts-${AWS::Region}-${AWS::AccountId}"
       Tags:
         - Key: Project
           Value: !Ref ProjectTag
@@ -94,7 +98,7 @@ Resources:
   ReportBucket:
     Type: AWS::S3::Bucket
     Properties:
-      BucketName: !Sub "${ProjectName}-reports-${AWS::AccountId}"
+      BucketName: !Sub "${ProjectName}-reports-${AWS::Region}-${AWS::AccountId}"
       Tags:
         - Key: Project
           Value: !Ref ProjectTag
@@ -227,6 +231,11 @@ Resources:
             Value: "--max-old-space-size=4096"
           - Name: REPORT_BUCKET
             Value: !Ref ReportBucket
+          # Supplied by CloudFormation rather than assembled in the buildspec. The
+          # hand-built "s3-website-${region}" URL pointed at the stack's region,
+          # which was wrong whenever the bucket lived elsewhere.
+          - Name: REPORT_WEBSITE_URL
+            Value: !GetAtt ReportBucket.WebsiteURL
           - Name: NIGHTLY_BROWSERSTACK
             Value: "false"
           - Name: BROWSERSTACK_SUITE
@@ -404,7 +413,7 @@ Outputs:
     Value: !Ref ReportBucket
     Description: S3 bucket for HTML test reports
   ReportURL:
-    Value: !Sub "http://${ReportBucket}.s3-website-${AWS::Region}.amazonaws.com/latest/index.html"
+    Value: !Sub "${ReportBucket.WebsiteURL}/latest/index.html"
     Description: URL to view the latest Playwright HTML report
   CodeBuildConsoleURL:
     Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/codesuite/codebuild/projects/${ProjectName}/history?region=${AWS::Region}"
