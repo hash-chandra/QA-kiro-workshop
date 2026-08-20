@@ -3,6 +3,8 @@ accessKey: ${BROWSERSTACK_ACCESS_KEY}
 
 projectName: Test Automation Accelerator
 buildName: ${BROWSERSTACK_BUILD_NAME}
+# Appended to buildName so repeat runs on the same day stay distinguishable.
+buildIdentifier: '#${BUILD_NUMBER}'
 
 framework: playwright
 

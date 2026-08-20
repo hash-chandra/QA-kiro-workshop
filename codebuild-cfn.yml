@@ -36,11 +36,37 @@ Parameters:
   NightlySchedule:
     Type: String
     Default: cron(0 0 * * ? *)
-    Description: Cron expression for nightly test run (default midnight UTC)
+    Description: Cron expression for the daily BrowserStack run (default 00:00 UTC every day)
+  BrowserStackSuite:
+    Type: String
+    Default: chrome
+    AllowedValues:
+      - chrome
+      - firefox
+      - safari
+      - all
+    Description: Which BrowserStack platform config the scheduled run uses
+  BuildTimeoutInMinutes:
+    Type: Number
+    Default: 60
+    MinValue: 5
+    MaxValue: 480
+    Description: >
+      CodeBuild timeout. A BrowserStack run pays for dependency install, the Local
+      tunnel handshake and remote session queueing, so 30 minutes is often too tight.
   ProjectTag:
     Type: String
     Default: box-cc-jg-qa-2026
     Description: Cost allocation tag value for the Project key
+  NotificationEmail:
+    Type: String
+    Default: ""
+    Description: >
+      Email address to notify when a build fails. Leave empty to skip creating the
+      SNS topic and alarm. A scheduled run nobody watches is a run nobody trusts.
+
+Conditions:
+  HasNotificationEmail: !Not [!Equals [!Ref NotificationEmail, ""]]
 
 Resources:
   ArtifactBucket:
@@ -149,6 +175,16 @@ Resources:
                 Resource:
                   - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${BrowserStackUsernamePath}"
                   - !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${BrowserStackAccessKeyPath}"
+              # Required when the BrowserStack access key is stored as a SecureString.
+              # Without this the scheduled build starts but resolves empty credentials.
+              # Scoped to SSM so the role cannot decrypt anything else in the account.
+              - Effect: Allow
+                Action:
+                  - kms:Decrypt
+                Resource: "*"
+                Condition:
+                  StringEquals:
+                    kms:ViaService: !Sub "ssm.${AWS::Region}.amazonaws.com"
               - Effect: Allow
                 Action:
                   - codebuild:CreateReport
@@ -167,7 +203,7 @@ Resources:
         - Key: Project
           Value: !Ref ProjectTag
       ServiceRole: !GetAtt CodeBuildRole.Arn
-      TimeoutInMinutes: 30
+      TimeoutInMinutes: !Ref BuildTimeoutInMinutes
       Source:
         Type: CODECOMMIT
         Location: !Sub "https://git-codecommit.${AWS::Region}.amazonaws.com/v1/repos/${RepositoryName}"
@@ -193,6 +229,15 @@ Resources:
             Value: !Ref ReportBucket
           - Name: NIGHTLY_BROWSERSTACK
             Value: "false"
+          - Name: BROWSERSTACK_SUITE
+            Value: !Ref BrowserStackSuite
+          # buildName base; the buildspec appends the UTC date so each daily run
+          # is a distinct build in the BrowserStack dashboard. Referenced as
+          # ${BROWSERSTACK_BUILD_NAME} from config/browserstack/*.yml.
+          - Name: BROWSERSTACK_BUILD_NAME
+            Value: !Sub "${ProjectName}-daily"
+          - Name: BROWSERSTACK_PROJECT_NAME
+            Value: "Test Automation Accelerator"
           - Name: BROWSERSTACK_USERNAME
             Value: !Ref BrowserStackUsernamePath
             Type: PARAMETER_STORE
@@ -240,7 +285,7 @@ Resources:
     Type: AWS::Events::Rule
     Properties:
       Name: !Sub "${ProjectName}-nightly-browserstack"
-      Description: "Trigger nightly BrowserStack Chrome test run"
+      Description: !Sub "Daily BrowserStack test run (${NightlySchedule}), suite: ${BrowserStackSuite}"
       Tags:
         - Key: Project
           Value: !Ref ProjectTag
@@ -280,6 +325,74 @@ Resources:
           RoleArn: !GetAtt EventBridgeRole.Arn
           Id: TriggerCodeBuild
 
+  # --- Build failure notifications -------------------------------------------
+  # Without this, a failed daily BrowserStack run is only visible to someone who
+  # goes looking in the console.
+  BuildNotificationTopic:
+    Type: AWS::SNS::Topic
+    Condition: HasNotificationEmail
+    Properties:
+      TopicName: !Sub "${ProjectName}-build-failures"
+      DisplayName: !Sub "${ProjectName} build failures"
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectTag
+      Subscription:
+        - Endpoint: !Ref NotificationEmail
+          Protocol: email
+
+  BuildNotificationTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Condition: HasNotificationEmail
+    Properties:
+      Topics:
+        - !Ref BuildNotificationTopic
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: AllowEventBridgePublish
+            Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: sns:Publish
+            Resource: !Ref BuildNotificationTopic
+            Condition:
+              StringEquals:
+                AWS:SourceAccount: !Ref AWS::AccountId
+
+  BuildFailureRule:
+    Type: AWS::Events::Rule
+    Condition: HasNotificationEmail
+    Properties:
+      Name: !Sub "${ProjectName}-build-failed"
+      Description: "Notify when a build fails or is stopped"
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectTag
+      EventPattern:
+        source:
+          - aws.codebuild
+        detail-type:
+          - "CodeBuild Build State Change"
+        detail:
+          project-name:
+            - !Ref CodeBuildProject
+          build-status:
+            - FAILED
+            - STOPPED
+      Targets:
+        - Arn: !Ref BuildNotificationTopic
+          Id: NotifyOnBuildFailure
+          InputTransformer:
+            InputPathsMap:
+              project: "$.detail.project-name"
+              status: "$.detail.build-status"
+              buildId: "$.detail.build-id"
+            InputTemplate: >-
+              "Build <status> for project <project>."
+              "Build ID: <buildId>"
+              "Logs and the Playwright report are linked from the CodeBuild console."
+
 Outputs:
   CodeBuildProjectName:
     Value: !Ref CodeBuildProject
@@ -296,3 +409,10 @@ Outputs:
   CodeBuildConsoleURL:
     Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/codesuite/codebuild/projects/${ProjectName}/history?region=${AWS::Region}"
     Description: URL to view build history in AWS Console
+  DailyScheduleExpression:
+    Value: !Ref NightlySchedule
+    Description: Cron expression driving the daily BrowserStack run (UTC)
+  BuildNotificationTopicArn:
+    Condition: HasNotificationEmail
+    Value: !Ref BuildNotificationTopic
+    Description: SNS topic notified on build failure (confirm the email subscription)

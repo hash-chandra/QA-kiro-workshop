@@ -11,6 +11,8 @@ export default defineConfig({
     ['html'],
     ['list'],
     ['json', { outputFile: 'test-results/results.json' }],
+    // JUnit XML is the format AWS CodeBuild report groups can actually parse.
+    ['junit', { outputFile: 'test-results/junit.xml' }],
     ['./src/reporters/arize-phoenix.reporter.ts'],
   ],
   webServer: [

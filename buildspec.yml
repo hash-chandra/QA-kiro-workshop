@@ -1,64 +1,155 @@
 version: 0.2
 
+# Two execution modes, selected by the NIGHTLY_BROWSERSTACK env flag:
+#   true  -> cross-browser run on BrowserStack (scheduled daily via EventBridge)
+#   false -> local headless Playwright run (on every push to the tracked branch)
+#
+# Exit codes are written to files under STATUS_DIR rather than kept in shell
+# variables. CodeBuild does not guarantee that a variable set in one phase is
+# visible in a later phase, which meant the old post_build gate always read 0 and
+# reported success even when the suite failed.
+
+env:
+  variables:
+    STATUS_DIR: "/tmp/build-status"
+    # Which BrowserStack platform config to use: chrome | firefox | safari | all
+    BROWSERSTACK_SUITE: "chrome"
+
 phases:
   install:
     runtime-versions:
       nodejs: 22
     commands:
+      - mkdir -p "$STATUS_DIR"
       - echo "Installing qe-playground dependencies..."
-      - cd $CODEBUILD_SRC_DIR/qe-playground/server && npm ci
-      - cd $CODEBUILD_SRC_DIR/qe-playground/client && npm ci
+      - cd "$CODEBUILD_SRC_DIR/qe-playground/server" && npm ci
+      - cd "$CODEBUILD_SRC_DIR/qe-playground/client" && npm ci
       - echo "Installing test-accelerator dependencies..."
-      - cd $CODEBUILD_SRC_DIR/test-accelerator && npm ci
-      - npx playwright install --with-deps chromium
+      - cd "$CODEBUILD_SRC_DIR/test-accelerator" && npm ci
+      - cd "$CODEBUILD_SRC_DIR/test-accelerator" && npx playwright install --with-deps chromium
+
+  pre_build:
+    commands:
+      - |
+        if [ "$NIGHTLY_BROWSERSTACK" = "true" ]; then
+          echo "Mode: BrowserStack cross-browser run (suite: ${BROWSERSTACK_SUITE})"
+        else
+          echo "Mode: local headless Playwright run"
+        fi
+      # Fail fast with an actionable message instead of letting the BrowserStack
+      # SDK start a run it cannot authenticate. Secret values are never echoed.
+      - |
+        if [ "$NIGHTLY_BROWSERSTACK" = "true" ]; then
+          if [ -z "$BROWSERSTACK_USERNAME" ] || [ -z "$BROWSERSTACK_ACCESS_KEY" ]; then
+            echo "ERROR: BrowserStack credentials resolved to empty values."
+            echo "Check that the SSM parameters referenced by the CodeBuild project exist and"
+            echo "that the build role allows ssm:GetParameters (plus kms:Decrypt for SecureString)."
+            exit 1
+          fi
+          echo "BrowserStack credentials resolved for user: ${BROWSERSTACK_USERNAME}"
+          case "$BROWSERSTACK_SUITE" in
+            chrome|firefox|safari|all) ;;
+            *) echo "ERROR: BROWSERSTACK_SUITE must be chrome, firefox, safari or all (got '$BROWSERSTACK_SUITE')."; exit 1 ;;
+          esac
+        fi
 
   build:
     on-failure: CONTINUE
     commands:
-      - cd $CODEBUILD_SRC_DIR/test-accelerator
-      - echo "Linting..."
-      - npm run lint 2>&1 || LINT_EXIT_CODE=$?
       - |
+        cd "$CODEBUILD_SRC_DIR/test-accelerator"
+        echo "Linting..."
+        set +e
+        npm run lint 2>&1
+        LINT_EXIT=$?
+        set -e
+        echo "$LINT_EXIT" > "$STATUS_DIR/lint.exit"
+        echo "Lint finished with exit code $LINT_EXIT"
+      - |
+        cd "$CODEBUILD_SRC_DIR/test-accelerator"
+        set +e
         if [ "$NIGHTLY_BROWSERSTACK" = "true" ]; then
-          echo "Running nightly BrowserStack Chrome tests..."
-          BUILD_NAME="nightly-$(date +%Y-%m-%d)"
-          sed -i "s|buildName:.*|buildName: $BUILD_NAME|" config/browserstack/browserstack.chrome.yml
-          npm run test:bs:chrome 2>&1 || TEST_EXIT_CODE=$?
+          # The BrowserStack SDK expands ${BROWSERSTACK_BUILD_NAME} inside
+          # config/browserstack/*.yml, so exporting it is enough. The previous
+          # `sed` rewrite of browserstack.chrome.yml only covered one browser and
+          # would fail silently if that line ever moved.
+          export BROWSERSTACK_BUILD_NAME="${BROWSERSTACK_BUILD_NAME:-accelerator}-$(date -u +%Y-%m-%d)"
+          echo "Running BrowserStack suite '${BROWSERSTACK_SUITE}' as build '${BROWSERSTACK_BUILD_NAME}'..."
+          if [ "$BROWSERSTACK_SUITE" = "all" ]; then
+            npm run test:bs 2>&1
+          else
+            npm run "test:bs:${BROWSERSTACK_SUITE}" 2>&1
+          fi
         else
-          echo "Running Playwright tests..."
-          npx playwright test 2>&1 || TEST_EXIT_CODE=$?
+          echo "Running local Playwright tests..."
+          npx playwright test 2>&1
         fi
-      - echo "Tests completed with exit code ${TEST_EXIT_CODE:-0} (lint exit code ${LINT_EXIT_CODE:-0})"
+        TEST_EXIT=$?
+        set -e
+        echo "$TEST_EXIT" > "$STATUS_DIR/test.exit"
+        echo "Tests finished with exit code $TEST_EXIT"
 
   post_build:
     commands:
-      - cd $CODEBUILD_SRC_DIR/test-accelerator
-      - echo "Publishing HTML report to S3..."
-      - BUILD_TIMESTAMP=$(date +%Y-%m-%d-%H%M%S)
-      - aws s3 sync playwright-report/ s3://$REPORT_BUCKET/latest/ --delete
-      - aws s3 sync playwright-report/ s3://$REPORT_BUCKET/runs/$BUILD_TIMESTAMP/
+      # A missing junit.xml means the run died before Playwright wrote results.
+      # Emit a failing placeholder so the report group still parses and the
+      # problem shows up as a failed test case rather than an opaque
+      # "no report files found" error that hides the real cause.
       - |
-        REPORT_URL="http://$REPORT_BUCKET.s3-website-$AWS_REGION.amazonaws.com/latest/index.html"
-        echo ""
-        echo "============================================"
-        echo "  PLAYWRIGHT REPORT URL"
-        echo "  $REPORT_URL"
-        echo "============================================"
-        echo ""
-      - |
-        if [ "${LINT_EXIT_CODE:-0}" -ne 0 ] || [ "${TEST_EXIT_CODE:-0}" -ne 0 ]; then
-          echo "Build failed (lint=${LINT_EXIT_CODE:-0}, tests=${TEST_EXIT_CODE:-0}). Check the report for details."
-          exit 1
-        else
-          echo "All checks passed."
+        cd "$CODEBUILD_SRC_DIR/test-accelerator"
+        mkdir -p test-results playwright-report
+        if [ ! -f test-results/junit.xml ]; then
+          echo "WARNING: test-results/junit.xml is missing — writing a failing placeholder."
+          MSG="No JUnit results were produced. The run failed before or during startup; see the build log above."
+          {
+            printf '<?xml version="1.0" encoding="UTF-8"?>\n'
+            printf '<testsuites tests="1" failures="1" errors="0" time="0">\n'
+            printf '  <testsuite name="run-setup" tests="1" failures="1" errors="0" time="0">\n'
+            printf '    <testcase name="Playwright produced test results" classname="run-setup" time="0">\n'
+            printf '      <failure message="%s">%s</failure>\n' "$MSG" "$MSG"
+            printf '    </testcase>\n'
+            printf '  </testsuite>\n'
+            printf '</testsuites>\n'
+          } > test-results/junit.xml
         fi
+      - |
+        cd "$CODEBUILD_SRC_DIR/test-accelerator"
+        if [ -z "$(ls -A playwright-report 2>/dev/null)" ]; then
+          echo "No HTML report was generated — skipping S3 upload."
+        else
+          echo "Publishing HTML report to S3..."
+          BUILD_TIMESTAMP=$(date -u +%Y-%m-%d-%H%M%S)
+          aws s3 sync playwright-report/ "s3://$REPORT_BUCKET/latest/" --delete
+          aws s3 sync playwright-report/ "s3://$REPORT_BUCKET/runs/$BUILD_TIMESTAMP/"
+          REPORT_URL="http://$REPORT_BUCKET.s3-website-$AWS_REGION.amazonaws.com/latest/index.html"
+          echo ""
+          echo "============================================"
+          echo "  PLAYWRIGHT REPORT URL"
+          echo "  $REPORT_URL"
+          echo "============================================"
+          echo ""
+        fi
+      - |
+        LINT_EXIT_CODE=$(cat "$STATUS_DIR/lint.exit" 2>/dev/null || echo 1)
+        # Default to 1: a missing status file means the command never ran to
+        # completion, which must not be reported as a pass.
+        TEST_EXIT_CODE=$(cat "$STATUS_DIR/test.exit" 2>/dev/null || echo 1)
+        echo "Summary: lint=$LINT_EXIT_CODE tests=$TEST_EXIT_CODE"
+        if [ "$LINT_EXIT_CODE" -ne 0 ] || [ "$TEST_EXIT_CODE" -ne 0 ]; then
+          echo "Build failed (lint=$LINT_EXIT_CODE, tests=$TEST_EXIT_CODE). Check the report for details."
+          exit 1
+        fi
+        echo "All checks passed."
 
 reports:
   playwright-results:
+    # CodeBuild parses Cucumber JSON, JUnit, NUnit, NUnit3, TestNG and Visual
+    # Studio TRX. The previous "GENERICJSONREPORT" pointed at Playwright's own
+    # results.json, which is not a format CodeBuild can read.
     files:
-      - "test-results/results.json"
+      - "test-results/junit.xml"
     base-directory: "test-accelerator"
-    file-format: "GENERICJSONREPORT"
+    file-format: "JUNITXML"
 
 artifacts:
   files:
