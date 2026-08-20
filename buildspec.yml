@@ -28,15 +28,29 @@ phases:
       # test-accelerator as workspaces, so `npm ci` inside one member resolves the
       # workspace root and prunes its siblings' node_modules. Running the three in
       # sequence left the server without fastify, the Playwright webServer failed
-      # to boot with ERR_MODULE_NOT_FOUND, and every UI test failed. The root
-      # lockfile already pins all three workspaces, so a single ci covers them.
+      # to boot with ERR_MODULE_NOT_FOUND, and every UI test failed.
+      #
+      # `npm install` rather than `npm ci`, deliberately. The committed lockfile was
+      # generated on macOS, so the only rolldown binding it records is
+      # @rolldown/binding-darwin-arm64. Vite 8 needs the binding matching the host,
+      # and `npm ci` installs strictly what the lockfile lists, so on Linux it
+      # installs none and the dev server dies with MODULE_NOT_FOUND. `npm install`
+      # re-resolves rolldown's optional platform dependencies for this machine.
+      # Switch back to `npm ci` once the lockfile carries every platform binding.
       - echo "Installing workspace dependencies from the repo root..."
-      - cd "$CODEBUILD_SRC_DIR" && npm ci
+      - cd "$CODEBUILD_SRC_DIR" && npm install --no-audit --no-fund
       - cd "$CODEBUILD_SRC_DIR/test-accelerator" && npx playwright install --with-deps chromium
-      # Fail here rather than 20 minutes later inside the webServer boot.
+      # Verify both webServer processes can actually start. Without this the failure
+      # surfaces much later as an opaque "webServer was not able to start".
       - |
         cd "$CODEBUILD_SRC_DIR/qe-playground/server"
-        node -e "import('fastify').then(()=>console.log('dependency check: server can resolve fastify')).catch(e=>{console.error('dependency check FAILED:',e.code);process.exit(1)})"
+        node -e "import('fastify').then(()=>console.log('ok: server resolves fastify')).catch(e=>{console.error('FAILED: server cannot resolve fastify:',e.code);process.exit(1)})"
+        BINDING=$(ls -d "$CODEBUILD_SRC_DIR/qe-playground/client/node_modules/@rolldown/binding-"* 2>/dev/null | head -1)
+        if [ -z "$BINDING" ]; then
+          echo "FAILED: no @rolldown/binding-* installed for this platform, so the Vite dev server cannot start."
+          exit 1
+        fi
+        echo "ok: rolldown binding present -> $(basename "$BINDING")"
 
   pre_build:
     commands:
