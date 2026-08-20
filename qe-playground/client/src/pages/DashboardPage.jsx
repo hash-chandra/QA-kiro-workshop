@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getTasks, createTask, updateTask, deleteTask } from '../api/client';
 import TaskForm from '../components/TaskForm';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -13,13 +13,23 @@ export default function DashboardPage({ user }) {
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [editTarget, setEditTarget] = useState(null);
+  // Sequence number of the most recent task request, used to discard responses
+  // that have been superseded.
+  const latestRequestRef = useRef(0);
 
   async function loadTasks() {
+    const requestId = ++latestRequestRef.current;
     setLoading(true);
     const params = {};
     if (search) params.search = search;
     if (statusFilter) params.status = statusFilter;
     const data = await getTasks(params);
+    // Drop a response that a newer request has already superseded. Nothing
+    // guarantees these resolve in order: the unfiltered request fired on mount
+    // could land after a filtered one and repopulate the list with every task,
+    // leaving the UI permanently inconsistent with the selected filter. That is
+    // rare locally but reproducible over a slower connection.
+    if (requestId !== latestRequestRef.current) return;
     setTasks(data);
     setLoading(false);
   }
